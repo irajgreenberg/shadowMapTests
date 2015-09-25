@@ -44,11 +44,11 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Users\C3\Dev\shadowMapTests\libs\glew-1.13.0\include;C:\Users\C3\Dev\shadowMapTests\libs\glm;C:\Users\C3\Dev\shadowMapTests\libs\glfw3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libs\glew-1.13.0\include;..\libs\glm;..\libs\glfw3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\C3\Dev\shadowMapTests\libs\glew-1.13.0\lib\Release\Win32;C:\Users\C3\Dev\shadowMapTests\libs\glfw3\src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\libs\glew-1.13.0\lib\Release\Win32;..\libs\glfw3\src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glew32s.llib;opengl32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
