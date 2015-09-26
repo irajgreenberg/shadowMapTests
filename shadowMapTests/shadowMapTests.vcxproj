@@ -49,7 +49,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\libs\glew-1.13.0\lib\Release\Win32;..\libs\glfw3\src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glew32s.llib;opengl32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32s.lib;opengl32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -68,6 +68,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ProtoShader.cpp" />
+    <ClCompile Include="ProtoUtility.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ProtoShader.h" />
+    <ClInclude Include="ProtoUtility.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\shader.frag" />
+    <None Include="..\shader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
