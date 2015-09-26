@@ -27,7 +27,7 @@
 #ifndef PROTO_UTILITY_H
 #define	PROTO_UTILITY_H
 
-//#include "ProtoCore.h"
+#include "ProtoCore.h"
 #include <vector>
 
 // for image path to texture
