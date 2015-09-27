@@ -59,7 +59,7 @@ int main(void) {
 	}
 	fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION)); 
 	
-	// initiaze window and GLFW
+	// initiaze GLFW window
 	GLFWwindow* window;
 	glfwSetErrorCallback(error_callback);
 	if (!glfwInit())
@@ -80,11 +80,13 @@ int main(void) {
 
 
 	// matrices
-	glm::mat4x4 M(1.0);
-	glm::mat4x4 V = glm::lookAt(glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-	glm::mat4x4 P = glm::perspective(75.0, 640.0 / 480.0, 0.1, 1000.0);
-	glm::mat4x4 MV = V * M;
-	glm::mat4x4 MVP = P * MV;
+
+	glm::mat4 M = glm::mat4(1.0);
+	glm::mat4 V = glm::lookAt(glm::vec3(0.0, 0.0, 50.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	glm::mat4 P = glm::perspective(55.0, 4.0/3.0, 0.1, 1000.0);
+	glm::mat4 MV = V * M;
+	glm::mat4 MVP = P * MV;
+	glm::mat3 N = glm::transpose(glm::inverse(glm::mat3(MV)));
 
 	// matrix uniforms
 	GLuint MV_U = glGetUniformLocation(ProtoShader::getID_2(), "ModelViewMatrix");
@@ -93,14 +95,14 @@ int main(void) {
 	GLuint MVP_U = glGetUniformLocation(ProtoShader::getID_2(), "MVP");
 
 	// lights
-	glm::vec4 LPOS(-0.5, 0.5, 0.5, 1.0);
-	glm::vec3 KD(0.5, 0.5, 0.5);
+	glm::vec4 LPOS(-0.5, 0.5, 100.0, 1.0);
+	glm::vec3 KD(1, 1, 1);
 	glm::vec3 LD(0.5, 0.5, 0.5);
 
 	// Light Uniforms
 	GLuint LPOS_U = glGetUniformLocation(ProtoShader::getID_2(), "LightPosition");
-	GLuint KD_U = glGetUniformLocation(ProtoShader::getID_2(), "kd");
-	GLuint LD_U = glGetUniformLocation(ProtoShader::getID_2(), "ld");
+	GLuint KD_U = glGetUniformLocation(ProtoShader::getID_2(), "Kd");
+	GLuint LD_U = glGetUniformLocation(ProtoShader::getID_2(), "Ld");
 	
 	
 	// geom
@@ -109,12 +111,6 @@ int main(void) {
 
 	while (!glfwWindowShouldClose(window))
 	{
-		// update matrices
-		glUniformMatrix4fv(MV_U, 1, GL_FALSE, &MV[0][0]);
-		glUniformMatrix4fv(MVP_U, 1, GL_FALSE, &MVP[0][0]);
-		glm::mat4x4 N(M);
-		glUniformMatrix3fv(N_U, 1, GL_FALSE, &N[0][0]); 
-
 		glUniformMatrix4fv(LPOS_U, 1, GL_FALSE, &LPOS[0]);
 		glUniformMatrix4fv(KD_U, 1, GL_FALSE, &KD[0]);
 		glUniformMatrix3fv(LD_U, 1, GL_FALSE, &LD[0]);
@@ -126,13 +122,19 @@ int main(void) {
 		ratio = width / (float)height;
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT);
-		//M = glm::scale(M, glm::vec3( 20, 20, 20 ));
-		//MV = V * M;
-		//MVP = P * MV;
-		//glUniformMatrix4fv(MV_U, 1, GL_FALSE, &MV[0][0]);
-		//glUniformMatrix4fv(MVP_U, 1, GL_FALSE, &MVP[0][0]);
-		////glm::mat4x4 N(M);
-		//glUniformMatrix3fv(N_U, 1, GL_FALSE, &N[0][0]);
+
+		M = glm::mat4(1.0f); // set to identity
+		M = glm::translate(M, glm::vec3(0, 0, -100));
+		M = glm::scale(M, glm::vec3( 20, 20, 20 ));
+		static float ang = 0;
+		M = glm::rotate(M, ang++, glm::vec3(1.0, 0.5, 0.65));
+		MV = V * M;
+		MVP = P * MV;
+		N = glm::transpose(glm::inverse(glm::mat3(MV)));
+		glUniformMatrix4fv(MV_U, 1, GL_FALSE, &MV[0][0]);
+		glUniformMatrix4fv(MVP_U, 1, GL_FALSE, &MVP[0][0]);
+		glUniformMatrix3fv(N_U, 1, GL_FALSE, &N[0][0]);
+
 		glBindVertexArray(vaoID);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glBindVertexArray(0);
@@ -170,6 +172,7 @@ void initGeom(){
 	glBindBuffer(GL_ARRAY_BUFFER, vboID); // Bind vertex attributes VBO
 	int vertsDataSize = 8*3*sizeof(float);
 	glBufferData(GL_ARRAY_BUFFER, vertsDataSize, NULL, GL_STREAM_DRAW); // allocate space
+	trace("vertsDataSize =", vertsDataSize);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, vertsDataSize, &vecs); // upload the data
 
 	const int STRIDE = 9; 
