@@ -122,7 +122,6 @@ void ProtoShader::init() {
         std::cerr << "Either vertex shader or fragment shader file not found." << std::endl;
         return;
     }
-    
     shader_vp = glCreateShader(GL_VERTEX_SHADER);
     if(0==shader_vp){
         std::cerr << "Error creating vertex shader"<< std::endl;

@@ -1,4 +1,4 @@
-#define GLEW_STATIC
+#define GLEW_STATIC // link to glew32s instead of including dll
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <stdlib.h>
@@ -15,6 +15,8 @@
 
 #include "ProtoUtility.h"
 #include "ProtoShader.h"
+
+
 
 // lazy
 using namespace std;
@@ -44,7 +46,7 @@ glm::vec3 getNorm(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2)
 // data structures
 //vector<glm::vec3> vecs;
 
-
+GLuint vaoID, vboID;
 void initGeom();
 
 int main(void) {
@@ -57,9 +59,25 @@ int main(void) {
 	}
 	fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION)); 
 	
-	ProtoShader* shader = new ProtoShader("shader.vert", "shader.vert");
+	// initiaze window and GLFW
+	GLFWwindow* window;
+	glfwSetErrorCallback(error_callback);
+	if (!glfwInit())
+		exit(EXIT_FAILURE);
+	window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+	if (!window)
+	{
+		glfwTerminate();
+		exit(EXIT_FAILURE);
+	}
+	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
+	glfwSetKeyCallback(window, key_callback);
 
-	initGeom();
+	// shader
+	ProtoShader* shader = new ProtoShader("shader.vert", "shader.frag");
+	shader->bind();
+
 
 	// matrices
 	glm::mat4x4 M(1.0);
@@ -75,7 +93,7 @@ int main(void) {
 	GLuint MVP_U = glGetUniformLocation(ProtoShader::getID_2(), "MVP");
 
 	// lights
-	glm::vec4 LPOS(-0.5, 0.5, 0.5, 1.0); 
+	glm::vec4 LPOS(-0.5, 0.5, 0.5, 1.0);
 	glm::vec3 KD(0.5, 0.5, 0.5);
 	glm::vec3 LD(0.5, 0.5, 0.5);
 
@@ -83,23 +101,12 @@ int main(void) {
 	GLuint LPOS_U = glGetUniformLocation(ProtoShader::getID_2(), "LightPosition");
 	GLuint KD_U = glGetUniformLocation(ProtoShader::getID_2(), "kd");
 	GLuint LD_U = glGetUniformLocation(ProtoShader::getID_2(), "ld");
-
-
 	
 	
-	GLFWwindow* window;
-	glfwSetErrorCallback(error_callback);
-	if (!glfwInit())
-		exit(EXIT_FAILURE);
-	window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
-	if (!window)
-	{
-		glfwTerminate();
-		exit(EXIT_FAILURE);
-	}
-	glfwMakeContextCurrent(window);
-	glfwSwapInterval(1);
-	glfwSetKeyCallback(window, key_callback);
+	// geom
+	initGeom();
+
+
 	while (!glfwWindowShouldClose(window))
 	{
 		// update matrices
@@ -119,20 +126,17 @@ int main(void) {
 		ratio = width / (float)height;
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotatef((float)glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
-		glBegin(GL_TRIANGLES);
-		glColor3f(1.f, 0.f, 0.f);
-		glVertex3f(-0.6f, -0.4f, 0.f);
-		glColor3f(0.f, 1.f, 0.f);
-		glVertex3f(0.6f, -0.4f, 0.f);
-		glColor3f(0.f, 0.f, 1.f);
-		glVertex3f(0.f, 0.6f, 0.f);
-		glEnd();
+		//M = glm::scale(M, glm::vec3( 20, 20, 20 ));
+		//MV = V * M;
+		//MVP = P * MV;
+		//glUniformMatrix4fv(MV_U, 1, GL_FALSE, &MV[0][0]);
+		//glUniformMatrix4fv(MVP_U, 1, GL_FALSE, &MVP[0][0]);
+		////glm::mat4x4 N(M);
+		//glUniformMatrix3fv(N_U, 1, GL_FALSE, &N[0][0]);
+		glBindVertexArray(vaoID);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -156,7 +160,7 @@ void initGeom(){
 	};
 	
 	
-	GLuint vaoID, vboID;
+	
 	// 1. Create and bind VAO
 	glGenVertexArrays(1, &vaoID); // Create VAO
 	glBindVertexArray(vaoID); // Bind VAO (making it active)
