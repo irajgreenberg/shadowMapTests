@@ -95,8 +95,8 @@ void ProtoShader::init() {
 	// use protobyte resources instead of project resources
 	vShaderURL = url + "\\" + vShader;
 	fShaderURL = url + "\\" + fShader;
-	std::cout << "vShaderURL = " << vShaderURL << std::endl;
-	std::cout << "fShaderURL = " << fShaderURL << std::endl;
+	//std::cout << "vShaderURL = " << vShaderURL << std::endl;
+	//std::cout << "fShaderURL = " << fShaderURL << std::endl;
 #else
 	vShaderURL = url + "/resources/shaders/" + vShader;
 	fShaderURL = url + "/resources/shaders/" + fShader;
@@ -106,8 +106,8 @@ void ProtoShader::init() {
     std::string vShaderCodeStr = ProtoUtility::load(vShaderURL);
 	std::string fShaderCodeStr = ProtoUtility::load(fShaderURL);
 
-	std::cout << "vShaderCodeStr = " << vShaderCodeStr << std::endl;
-	std::cout << "fShaderCodeStr = " << fShaderCodeStr << std::endl;
+	//std::cout << "vShaderCodeStr = " << vShaderCodeStr << std::endl;
+	//std::cout << "fShaderCodeStr = " << fShaderCodeStr << std::endl;
     
         shader_vp = 0;
         shader_fp = 0;
