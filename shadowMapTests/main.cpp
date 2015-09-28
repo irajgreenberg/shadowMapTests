@@ -34,13 +34,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
-
-//glm::vec3 getNorm(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2) {
-//	glm::vec3 a = v2 - v0;
-//	glm::vec3 b = v1 - v0;
-//	return glm::normalize(glm::cross(a, b));
-//}
-
 // data structures
 struct Vertex {
 	glm::vec3 pos;
@@ -84,8 +77,8 @@ GLuint vaoID, vboID;
 vector<glm::vec3> vecs;
 vector<Vertex> verts;
 void initGeom();
-void drawRect(float);
-void drawCube();
+void drawRect(glm::vec3);
+void drawCube(glm::vec3);
 
 std::stack <glm::mat4> matrixStack; 
 void push();
@@ -96,14 +89,6 @@ void rotate(float ang, const glm::vec3& axis);
 void scale(const glm::vec3& v);
 
 int main(void) {
-	GLenum err = glewInit();
-	//if (GLEW_OK != err)
-	//{
-	//	/* Problem: glewInit failed, something is seriously wrong. */
-	//	fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-	//	//...
-	//}
-	//fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION)); 
 	
 	// initiaze GLFW window
 	GLFWwindow* window;
@@ -117,14 +102,27 @@ int main(void) {
 		exit(EXIT_FAILURE);
 	}
 	glfwMakeContextCurrent(window);
+
+	// load modern GL drivers
+	//glewExperimental = GL_TRUE;
+	//GLenum err = glewInit();
+
+	//// get version info
+	//const GLubyte* renderer = glGetString(GL_RENDERER); // get renderer string
+	//const GLubyte* version = glGetString(GL_VERSION); // version as a string
+	//printf("Renderer: %s\n", renderer);
+	//printf("OpenGL version supported %s\n", version);
+
+
 	glfwSwapInterval(1);
 	glfwSetKeyCallback(window, key_callback);
 
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 
-	glClearStencil(0); // clear stencil buffer
-	glClearDepth(1.0f); // 0 is near, 1 is far
-	glDepthFunc(GL_LEQUAL);
+	//glClearStencil(0); // clear stencil buffer
+	//glClearDepth(1.0f); // 0 is near, 1 is far
+	//glDepthFunc(GL_LEQUAL);
 		//glEnable(GL_CULL_FACE);
 	//glCullFace(GL_BACK);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -135,8 +133,8 @@ int main(void) {
 
 
 	// matrices
-	V = glm::lookAt(glm::vec3(0.0, 300, 250.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-	P = glm::perspective(45.0, 4.0/3.0, 0.1, 1000.0);
+	V = glm::lookAt(glm::vec3(0.0, 10.0, 25.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	P = glm::perspective(45.0f, 4.0f/3.0f, 0.1f, 1000.0f);
 
 	// matrix uniforms
 	MV_U = glGetUniformLocation(ProtoShader::getID_2(), "ModelViewMatrix");
@@ -160,7 +158,6 @@ int main(void) {
 		glUniform3fv(KD_U, 1, &KD.x);
 		glUniform3fv(LD_U, 1, &LD.x);
 		
-		
 		float ratio;
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
@@ -171,15 +168,24 @@ int main(void) {
 		M = glm::mat4(1.0f); // set to identity
 		//translate(glm::vec3(0, 0, -100));
 		static float rot = 0;
-		rotate(rot += .02, glm::vec3(.65, 1, .55));
+
+		rotate(rot += .02, glm::vec3(0, 1, 0));
+
+		drawRect({ 65, 1, 65 });
+
 		push();
-		scale(glm::vec3(400, 400, 400));
-		//drawRect(500);
+		translate({ -2, 2, 0 });
+		drawCube({ 4, 4, 4 });
 		pop();
 
 		push();
-		//scale(glm::vec3(40, 40, 40)); 
-		drawCube();
+		translate({ 4, 1, 1 });
+		drawCube({ 2, 2, 2 });
+		pop();
+
+		push();
+		translate({ -3, 1, -5 });
+		drawCube({ 2, 2, 2 });
 		pop();
 
 		glfwSwapBuffers(window);
@@ -191,14 +197,14 @@ int main(void) {
 	exit(EXIT_SUCCESS);
 }
 
-void drawRect(float scl){
+void drawRect(glm::vec3 scl){
 	if (vecs.size() > 0) vecs.clear();
 	if (verts.size() > 0) verts.clear();
 
-	vecs.push_back(glm::vec3(-0.5, 0.0, 0.5));
-	vecs.push_back(glm::vec3(0.5, 0.0, 0.5));
-	vecs.push_back(glm::vec3(0.5, 0.0, -0.5));
-	vecs.push_back(glm::vec3(-0.5, 0.0, -0.5));
+	vecs.push_back(glm::vec3(-0.5*scl.x, 0.0, 0.5*scl.z));
+	vecs.push_back(glm::vec3(0.5*scl.x, 0.0, 0.5*scl.z));
+	vecs.push_back(glm::vec3(0.5*scl.x, 0.0, -0.5*scl.z));
+	vecs.push_back(glm::vec3(-0.5*scl.x, 0.0, -0.5*scl.z));
 
 	Face f1(vecs.at(0), vecs.at(1), vecs.at(2));
 	verts.push_back(Vertex(vecs.at(0), f1.getNorm(), glm::vec3(1.0, 0.0, 0.0)));
@@ -245,47 +251,52 @@ void drawRect(float scl){
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
 
-
 	glBindVertexArray(vaoID);
-	glPointSize(8.0);
-	//push();
-	//scale(glm::vec3(scl, scl, scl));
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-	//pop();
 	glBindVertexArray(0);
 }
 
-void drawCube(){
+void drawCube(glm::vec3 scl){
 	//glm::vec3 v(100, 100, 100);
 	// top
 	push();
-	translate(glm::vec3(0, 20, 0));
-	scale(glm::vec3(40, 40, 40));
-	drawRect(40);
+	translate(glm::vec3(0, scl.y / 2, 0));
+	drawRect({ scl.x, 1, scl.x });
 	pop();
 
 	// bottom
 	push();
-	translate(glm::vec3(0, -20, 0));
-	scale(glm::vec3(40, 40, 40));
-	rotate(180, glm::vec3(1, 0, 0));
-	drawRect(40);
+	translate(glm::vec3(0, -scl.y / 2, 0));
+	rotate(3.124, glm::vec3(1.0, 0, 0));
+	drawRect({ scl.x, 1, scl.z });
 	pop();
 
 	// left
 	push();
-	translate(glm::vec3(-20, 0, 0));
-	scale(glm::vec3(40, 40, 40));
-	rotate(90, glm::vec3(0, 0, 1));
-	drawRect(40);
+	translate(glm::vec3(-scl.x / 2, 0, 0));
+	rotate(3.124 / 2, glm::vec3(0, 0, 1));
+	drawRect({ scl.x, 1, scl.z });
 	pop();
 
 	// right
 	push();
-	translate(glm::vec3(20, 0, 0));
-	scale(glm::vec3(40, 40, 40));
-	rotate(-90, glm::vec3(0, 0, 1));
-	drawRect(40);
+	translate(glm::vec3(scl.x / 2, 0, 0));
+	rotate(-3.124 / 2, glm::vec3(0, 0, 1));
+	drawRect({ scl.x, 1, scl.z });
+	pop();
+
+	// front
+	push();
+	translate(glm::vec3(0, 0, scl.z / 2));
+	rotate(3.124 / 2, glm::vec3(1, 0, 0));
+	drawRect({ scl.x, 1, scl.z });
+	pop();
+
+	// back
+	push();
+	translate(glm::vec3(0, 0, -scl.z / 2));
+	rotate(-3.124 / 2, glm::vec3(1, 0, 0));
+	drawRect({ scl.x, 1, scl.z });
 	pop();
 }
 
