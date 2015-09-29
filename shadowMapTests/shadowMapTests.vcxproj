@@ -68,10 +68,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ProtoMath.cpp" />
     <ClCompile Include="ProtoShader.cpp" />
     <ClCompile Include="ProtoUtility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ProtoMath.h" />
     <ClInclude Include="ProtoShader.h" />
     <ClInclude Include="ProtoUtility.h" />
   </ItemGroup>

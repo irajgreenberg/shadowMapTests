@@ -15,6 +15,7 @@
 
 #include "ProtoUtility.h"
 #include "ProtoShader.h"
+#include "ProtoMath.h"
 #include <stack>
 
 
@@ -61,9 +62,12 @@ struct Face {
 // matrices
 glm::mat4 M, V, P, MV, MVP;
 glm::mat3 N;
+// Light matrices
+glm::mat4 LV, LP, LMV, LMVP;
 
 // matrix uniforms
 GLuint MV_U, P_U, MVP_U, N_U;
+GLuint LMV_U, LP_U, LMVP_U;
 
 // lights
 glm::vec4 LPOS;
@@ -120,12 +124,12 @@ int main(void) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-	//glClearStencil(0); // clear stencil buffer
+	glClearStencil(0); // clear stencil buffer
 	//glClearDepth(1.0f); // 0 is near, 1 is far
 	//glDepthFunc(GL_LEQUAL);
-		//glEnable(GL_CULL_FACE);
-	//glCullFace(GL_BACK);
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	// shader
 	ProtoShader* shader = new ProtoShader("shader.vert", "shader.frag");
@@ -133,7 +137,7 @@ int main(void) {
 
 
 	// matrices
-	V = glm::lookAt(glm::vec3(0.0, 10.0, 25.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	V = glm::lookAt(glm::vec3(0.0, 25.0, 55.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	P = glm::perspective(45.0f, 4.0f/3.0f, 0.1f, 1000.0f);
 
 	// matrix uniforms
@@ -147,13 +151,37 @@ int main(void) {
 	KD = glm::vec3(1, 1, 1);
 	LD = glm::vec3(1, 1, 1);
 
+	// light view for testing
+	//V = glm::lookAt(glm::vec3(-0.5, 0.5, 100.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+
+	
+	// Light Matrix Uniforms
+	LMV_U = glGetUniformLocation(ProtoShader::getID_2(), "LMV");
+	LP_U = glGetUniformLocation(ProtoShader::getID_2(), "LP");
+	LMVP_U = glGetUniformLocation(ProtoShader::getID_2(), "LMVP");
+
 	// Light Uniforms
 	LPOS_U = glGetUniformLocation(ProtoShader::getID_2(), "LightPosition");
 	KD_U = glGetUniformLocation(ProtoShader::getID_2(), "Kd");
 	LD_U = glGetUniformLocation(ProtoShader::getID_2(), "Ld");
 
+	static const int BLOCK_COUNT = 50;
+	glm::vec3 locs[BLOCK_COUNT];
+	for (auto i = 0; i < BLOCK_COUNT; ++i) {
+		float y = random(0.125f, 2.0f);
+		locs[i] = { random(-20.0f, 20.0f), y, random(-20.0f, 20.0f) };
+	}
+
 	while (!glfwWindowShouldClose(window))
 	{
+		LV = glm::lookAt(glm::vec3(LPOS.x, LPOS.y, LPOS.z), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		LP = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
+		LMV = LV * M;
+		LMVP = LP * LMV;
+		glUniformMatrix4fv(LMV_U, 1, GL_FALSE, &LMV[0][0]);
+		glUniformMatrix4fv(LP_U, 1, GL_FALSE, &LP[0][0]);
+		glUniformMatrix4fv(LMVP_U, 1, GL_FALSE, &LMVP[0][0]);
+			
 		glUniform4fv(LPOS_U, 1, &LPOS.x);
 		glUniform3fv(KD_U, 1, &KD.x);
 		glUniform3fv(LD_U, 1, &LD.x);
@@ -165,28 +193,18 @@ int main(void) {
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		M = glm::mat4(1.0f); // set to identity
-		//translate(glm::vec3(0, 0, -100));
+		M = glm::mat4(1.0f); // set to identity;
 		static float rot = 0;
-
 		rotate(rot += .02, glm::vec3(0, 1, 0));
 
 		drawRect({ 65, 1, 65 });
 
-		push();
-		translate({ -2, 2, 0 });
-		drawCube({ 4, 4, 4 });
-		pop();
-
-		push();
-		translate({ 4, 1, 1 });
-		drawCube({ 2, 2, 2 });
-		pop();
-
-		push();
-		translate({ -3, 1, -5 });
-		drawCube({ 2, 2, 2 });
-		pop();
+		for (auto i = 0; i < BLOCK_COUNT; ++i) {
+			push();
+			translate({ locs[i].x, locs[i].y, locs[i].z });
+			drawCube({ locs[i].y * 2, locs[i].y * 2, locs[i].y * 2 });
+			pop();
+		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

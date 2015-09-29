@@ -24,12 +24,18 @@
     <ClCompile Include="ProtoUtility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ProtoMath.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ProtoShader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ProtoUtility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProtoMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
