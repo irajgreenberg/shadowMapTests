@@ -41,15 +41,22 @@ struct Vertex {
 	glm::vec3 norm;
 	glm::vec3 col;
 
-	Vertex(const glm::vec3& pos, const glm::vec3& norm, const glm::vec3& col):
+	Vertex(){}
+	Vertex(const glm::vec3& pos, const glm::vec3& norm, const glm::vec3& col) :
 	pos(pos), norm(norm), col(col) {}
 };
 
 struct Face {
 	glm::vec3 v0, v1, v2;
+	glm::vec3* v0_ptr, *v1_ptr, *v2_ptr;
 
+	Face(){}
+	
 	Face(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2) :
 		v0(v0), v1(v1), v2(v2) {}
+
+	Face(glm::vec3* v0_ptr, glm::vec3* v1_ptr, glm::vec3* v2_ptr) :
+		v0_ptr(v0_ptr), v1_ptr(v1_ptr), v2_ptr(v2_ptr) {}
 
 	glm::vec3 getNorm() {
 		glm::vec3 a = v2 - v0;
@@ -57,6 +64,131 @@ struct Face {
 		return glm::normalize(glm::cross(b, a));
 	}
 };
+struct Index {
+	int i0, i1, i2;
+	Index() {}
+	Index(int i0, int i1, int i2) :
+		i0(i0), i1(i1), i2(i2) {}
+
+};
+
+
+
+
+struct Cube{
+
+	GLuint cubeVAO = 0;
+	float w, h, d;
+	Index inds[12];
+	glm::vec3 vecs[8];
+	Face faces[12];
+	Vertex verts[36];
+	GLfloat prims[36 * 9];
+	
+	Cube() :
+		Cube(1, 1, 1) {
+	}
+	
+	Cube(float sz) :
+		Cube(sz, sz, sz) {
+	}
+	
+	Cube(float w, float h, float d) :
+	w(w), h(h), d(d) {
+		__init();
+	}
+
+	void __init(){
+		vecs[0] = { -.5, .5, .5 };
+		vecs[1] = { -.5, -.5, .5 };
+		vecs[2] = { .5, -.5, .5 };
+		vecs[3] = { .5, .5, .5 };
+		vecs[4] = { .5, .5, -.5 };
+		vecs[5] = { .5, -.5, -.5 };
+		vecs[6] = { -.5, -.5, -.5 };
+		vecs[7] = { -.5, .5, -.5 };
+
+		inds[0] = { 0, 1, 2 };
+		inds[1] = { 0, 2, 3 };
+		inds[2] = { 7, 4, 5 };
+		inds[3] = { 7, 5, 6 };
+		inds[4] = { 0, 7, 6 };
+		inds[5] = { 0, 6, 1 };
+		inds[6] = { 4, 3, 2 };
+		inds[7] = { 4, 2, 5 };
+		inds[8] = { 0, 4, 7 };
+		inds[9] = { 0, 3, 4 };
+		inds[10] = { 1, 6, 5 };
+		inds[11] = { 1, 5, 2 };
+
+		for (int i = 0, j = 0; i < 12; i++, j = 3) {
+			faces[i] = { { vecs[inds[i].i0] }, { vecs[inds[i].i1] }, { vecs[inds[i].i2] } };
+			
+			/*verts[j] = { { vecs[inds[i].i0] }, faces[i].getNorm(), {.5f, .34f, .8f} };
+			verts[j + 1] = { { vecs[inds[i].i1] }, faces[i].getNorm(), { .92f, .34f, .2f } };
+			verts[j + 2] = { { vecs[inds[i].i2] }, faces[i].getNorm(), { .5f, .87f, .8f } };*/
+		}
+
+		// calc vertex normals
+		for (int i = 0; i < 8; i++) {
+			glm::vec3 v{};
+			for (int j = 0; j < 12; j++) {
+				if (&vecs[i] == faces[j].v0_ptr || &vecs[i] == faces[j].v1_ptr || &vecs[i] == faces[j].v2_ptr){
+					v += faces[j].getNorm();
+				}
+			}
+			verts[i].pos = vecs[i];
+			verts[i].norm = v;
+			verts[i].col = { random(1.0), random(1.0), random(1.0) };
+		}
+
+		// 1. Create and bind VAO
+		glGenVertexArrays(1, &cubeVAO); // Create VAO
+		glBindVertexArray(cubeVAO); // Bind VAO (making it active)
+		//2. Create and bind VBO
+		GLuint cubeVBO = 0;
+		// a. Vertex attributes
+		glGenBuffers(1, &cubeVBO); // Create VBO ID
+		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO); // Bind vertex attributes VBO
+		int vertsDataSize = 36*9 *sizeof(GLfloat);
+		glBufferData(GL_ARRAY_BUFFER, vertsDataSize, NULL, GL_STREAM_DRAW); // allocate space
+		//trace("vertsDataSize =", vertsDataSize);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, vertsDataSize, &verts[0]); // upload the data
+
+		
+		
+		// b. Indices  uses ELEMENT_ARRAY_BUFFER
+		GLuint cubeIndexVBO = 0;
+		glGenBuffers(1, &cubeIndexVBO); // Generate buffer
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIndexVBO); // Bind indices VBO
+		int indsDataSize = 12 * 3 * sizeof (GL_UNSIGNED_INT);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indsDataSize, NULL, GL_STATIC_DRAW); // allocate
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indsDataSize, &inds[0]); // upload the data
+		
+		
+		const int STRIDE = 9;
+		for (int i = 0; i < 3; i++) {
+			glEnableVertexAttribArray(i);
+		}
+		// (x, y, z, nx, ny, nz, r, g, b)
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(0)); // pos
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(12)); // norm
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(24)); // col
+
+		// Disable VAO
+		glEnableVertexAttribArray(0);
+		glBindVertexArray(0);
+	}
+
+	void display(){
+		glBindVertexArray(cubeVAO);
+		glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glBindVertexArray(0);
+	}
+
+	
+};
+
 
 
 // matrices
@@ -91,6 +223,8 @@ void concat();
 void translate(const glm::vec3& v);
 void rotate(float ang, const glm::vec3& axis);
 void scale(const glm::vec3& v);
+
+
 
 int main(void) {
 	
@@ -172,6 +306,9 @@ int main(void) {
 		locs[i] = { random(-20.0f, 20.0f), y, random(-20.0f, 20.0f) };
 	}
 
+	const int cubeCount = 2000;
+	Cube cube(5);
+
 	while (!glfwWindowShouldClose(window))
 	{
 		LV = glm::lookAt(glm::vec3(LPOS.x, LPOS.y, LPOS.z), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
@@ -199,12 +336,20 @@ int main(void) {
 
 		drawRect({ 65, 1, 65 });
 
-		for (auto i = 0; i < BLOCK_COUNT; ++i) {
+		//for (auto i = 0; i < BLOCK_COUNT; ++i) {
+		//	push();
+		//	translate({ locs[i].x, locs[i].y, locs[i].z });
+		//	drawCube({ locs[i].y * 2, locs[i].y * 2, locs[i].y * 2 });
+		//	pop();
+		//}
+
+		for (auto i = 0; i < cubeCount; i++) {
 			push();
 			translate({ locs[i].x, locs[i].y, locs[i].z });
-			drawCube({ locs[i].y * 2, locs[i].y * 2, locs[i].y * 2 });
+			cube.display();
 			pop();
 		}
+		
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -232,7 +377,6 @@ void drawRect(glm::vec3 scl){
 
 	vector<GLfloat> prims;
 	for (int i = 0; i < verts.size(); i++) {
-		//trace(&verts.at(i));
 		prims.push_back(verts.at(i).pos.x);
 		prims.push_back(verts.at(i).pos.y);
 		prims.push_back(verts.at(i).pos.z);
