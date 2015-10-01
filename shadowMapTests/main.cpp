@@ -82,8 +82,8 @@ struct Cube{
 	Index inds[12];
 	glm::vec3 vecs[8];
 	Face faces[12];
-	Vertex verts[36];
-	GLfloat prims[36 * 9];
+	Vertex verts[8];
+	//GLfloat prims[36 * 9];
 	
 	Cube() :
 		Cube(1, 1, 1) {
@@ -121,12 +121,8 @@ struct Cube{
 		inds[10] = { 1, 6, 5 };
 		inds[11] = { 1, 5, 2 };
 
-		for (int i = 0, j = 0; i < 12; i++, j = 3) {
+		for (int i = 0; i < 12; i++) {
 			faces[i] = { { &vecs[inds[i].i0] }, { &vecs[inds[i].i1] }, { &vecs[inds[i].i2] } };
-			
-			/*verts[j] = { { vecs[inds[i].i0] }, faces[i].getNorm(), {.5f, .34f, .8f} };
-			verts[j + 1] = { { vecs[inds[i].i1] }, faces[i].getNorm(), { .92f, .34f, .2f } };
-			verts[j + 2] = { { vecs[inds[i].i2] }, faces[i].getNorm(), { .5f, .87f, .8f } };*/
 		}
 
 		// calc vertex normals
@@ -150,7 +146,7 @@ struct Cube{
 		// a. Vertex attributes
 		glGenBuffers(1, &cubeVBO); // Create VBO ID
 		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO); // Bind vertex attributes VBO
-		int vertsDataSize = 8*9 *sizeof(GLfloat);
+		int vertsDataSize = 8*9*sizeof(GLfloat);
 		glBufferData(GL_ARRAY_BUFFER, vertsDataSize, NULL, GL_STREAM_DRAW); // allocate space
 		//trace("vertsDataSize =", vertsDataSize);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, vertsDataSize, &verts[0]); // upload the data
@@ -182,7 +178,7 @@ struct Cube{
 
 	void display(){
 		glBindVertexArray(cubeVAO);
-		glDrawElements(GL_TRIANGLES, 8, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		//glDrawElements(GL_TRIANGLES, 8, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 		glBindVertexArray(0);
 	}
 
@@ -346,7 +342,7 @@ int main(void) {
 		for (auto i = 0; i < cubeCount; i++) {
 			push();
 			translate({ locs[i].x, locs[i].y, locs[i].z });
-			cube.display();
+			//cube.display();
 			pop();
 		}
 		
