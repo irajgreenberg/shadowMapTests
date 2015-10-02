@@ -47,20 +47,16 @@ struct Vertex {
 };
 
 struct Face {
-	glm::vec3 v0, v1, v2;
 	glm::vec3* v0_ptr, *v1_ptr, *v2_ptr;
 
 	Face(){}
 	
-	Face(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2) :
-		v0(v0), v1(v1), v2(v2) {}
-
 	Face(glm::vec3* v0_ptr, glm::vec3* v1_ptr, glm::vec3* v2_ptr) :
 		v0_ptr(v0_ptr), v1_ptr(v1_ptr), v2_ptr(v2_ptr) {}
 
 	glm::vec3 getNorm() {
-		glm::vec3 a = v2 - v0;
-		glm::vec3 b = v1 - v0;
+		glm::vec3 a = *v2_ptr - *v0_ptr;
+		glm::vec3 b = *v1_ptr - *v0_ptr;
 		return glm::normalize(glm::cross(b, a));
 	}
 };
@@ -78,6 +74,7 @@ struct Index {
 struct Cube{
 
 	GLuint cubeVAO = 0;
+	glm::vec3 loc;
 	float w, h, d;
 	Index inds[12];
 	glm::vec3 vecs[8];
@@ -95,6 +92,11 @@ struct Cube{
 	
 	Cube(float w, float h, float d) :
 	w(w), h(h), d(d) {
+		__init();
+	}
+
+	Cube(glm::vec3 pos, glm::vec3 dim) :
+		w(dim.x), h(dim.y), d(dim.z) {
 		__init();
 	}
 
@@ -122,17 +124,18 @@ struct Cube{
 		inds[11] = { 1, 5, 2 };
 
 		for (int i = 0; i < 12; i++) {
-			faces[i] = { { &vecs[inds[i].i0] }, { &vecs[inds[i].i1] }, { &vecs[inds[i].i2] } };
+			faces[i] = Face( &vecs[inds[i].i0], &vecs[inds[i].i1], &vecs[inds[i].i2] );
 		}
 
 		// calc vertex normals
 		for (int i = 0; i < 8; i++) {
-			glm::vec3 v{};
+			glm::vec3 v{0, 0, 0};
 			for (int j = 0; j < 12; j++) {
 				if (&vecs[i] == faces[j].v0_ptr || &vecs[i] == faces[j].v1_ptr || &vecs[i] == faces[j].v2_ptr){
 					v += faces[j].getNorm();
 				}
 			}
+			v = glm::normalize(v);
 			verts[i].pos = vecs[i];
 			verts[i].norm = v;
 			verts[i].col = { random(1.0), random(1.0), random(1.0) };
@@ -151,7 +154,6 @@ struct Cube{
 		//trace("vertsDataSize =", vertsDataSize);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, vertsDataSize, &verts[0]); // upload the data
 
-		
 		
 		// b. Indices  uses ELEMENT_ARRAY_BUFFER
 		GLuint cubeIndexVBO = 0;
@@ -178,13 +180,12 @@ struct Cube{
 
 	void display(){
 		glBindVertexArray(cubeVAO);
-		//glDrawElements(GL_TRIANGLES, 8, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glDrawElements(GL_TRIANGLES, 8*9, GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
 	}
 
 	
 };
-
 
 
 // matrices
@@ -238,14 +239,14 @@ int main(void) {
 	glfwMakeContextCurrent(window);
 
 	// load modern GL drivers
-	//glewExperimental = GL_TRUE;
-	//GLenum err = glewInit();
+	glewExperimental = GL_TRUE;
+	GLenum err = glewInit();
 
-	//// get version info
-	//const GLubyte* renderer = glGetString(GL_RENDERER); // get renderer string
-	//const GLubyte* version = glGetString(GL_VERSION); // version as a string
-	//printf("Renderer: %s\n", renderer);
-	//printf("OpenGL version supported %s\n", version);
+	// get version info
+	const GLubyte* renderer = glGetString(GL_RENDERER); // get renderer string
+	const GLubyte* version = glGetString(GL_VERSION); // version as a string
+	printf("Renderer: %s\n", renderer);
+	printf("OpenGL version supported %s\n", version);
 
 
 	glfwSwapInterval(1);
@@ -295,15 +296,16 @@ int main(void) {
 	KD_U = glGetUniformLocation(ProtoShader::getID_2(), "Kd");
 	LD_U = glGetUniformLocation(ProtoShader::getID_2(), "Ld");
 
-	static const int BLOCK_COUNT = 50;
-	glm::vec3 locs[BLOCK_COUNT];
-	for (auto i = 0; i < BLOCK_COUNT; ++i) {
+	
+
+	const int cubeCount = 1000;
+	Cube cube(5);
+
+	glm::vec3 locs[cubeCount];
+	for (auto i = 0; i < cubeCount; ++i) {
 		float y = random(0.125f, 2.0f);
 		locs[i] = { random(-20.0f, 20.0f), y, random(-20.0f, 20.0f) };
 	}
-
-	const int cubeCount = 2000;
-	Cube cube(5);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -332,17 +334,11 @@ int main(void) {
 
 		drawRect({ 65, 1, 65 });
 
-		//for (auto i = 0; i < BLOCK_COUNT; ++i) {
-		//	push();
-		//	translate({ locs[i].x, locs[i].y, locs[i].z });
-		//	drawCube({ locs[i].y * 2, locs[i].y * 2, locs[i].y * 2 });
-		//	pop();
-		//}
 
 		for (auto i = 0; i < cubeCount; i++) {
 			push();
 			translate({ locs[i].x, locs[i].y, locs[i].z });
-			//cube.display();
+			cube.display();
 			pop();
 		}
 		
@@ -365,7 +361,7 @@ void drawRect(glm::vec3 scl){
 	vecs.push_back(glm::vec3(0.5*scl.x, 0.0, -0.5*scl.z));
 	vecs.push_back(glm::vec3(-0.5*scl.x, 0.0, -0.5*scl.z));
 
-	Face f1(vecs.at(0), vecs.at(1), vecs.at(2));
+	Face f1(&vecs.at(0), &vecs.at(1), &vecs.at(2));
 	verts.push_back(Vertex(vecs.at(0), f1.getNorm(), glm::vec3(1.0, 0.0, 0.0)));
 	verts.push_back(Vertex(vecs.at(1), f1.getNorm(), glm::vec3(0.0, 1.0, 0.0)));
 	verts.push_back(Vertex(vecs.at(2), f1.getNorm(), glm::vec3(0.0, 0.0, 1.0)));
