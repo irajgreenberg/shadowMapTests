@@ -95,8 +95,8 @@ struct Cube{
 		__init();
 	}
 
-	Cube(glm::vec3 pos, glm::vec3 dim) :
-		w(dim.x), h(dim.y), d(dim.z) {
+	Cube(const glm::vec3& loc, const glm::vec3& dim) :
+		loc(loc), w(dim.x), h(dim.y), d(dim.z) {
 		__init();
 	}
 
@@ -180,6 +180,10 @@ struct Cube{
 
 	void display(){
 		glBindVertexArray(cubeVAO);
+		push();
+		//loc.y = -
+		translate(loc);
+		scale({ w, h, d });
 		glDrawElements(GL_TRIANGLES, 8*9, GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
 	}
