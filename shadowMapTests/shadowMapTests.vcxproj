@@ -73,6 +73,7 @@
     <ClCompile Include="ProtoUtility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dataStructs.h" />
     <ClInclude Include="ProtoMath.h" />
     <ClInclude Include="ProtoShader.h" />
     <ClInclude Include="ProtoUtility.h" />

@@ -5,6 +5,7 @@ layout (location = 1) in vec3 VertexNormal;
 layout (location = 2) in vec3 VertexColor;
 
 out vec3 LightIntensity;
+out vec3 vertCol;
 
 uniform vec4 LightPosition; // Light position in eye coords.
 uniform vec3 Kd; // Diffuse reflectivity
@@ -15,7 +16,12 @@ uniform mat3 NormalMatrix;
 uniform mat4 ProjectionMatrix;
 uniform mat4 MVP; // Projection * ModelView
 
+// shadow
+//uniform int isShadowRenderPass;
+
 void main() {
+
+vertCol = VertexColor;
   // Convert normal and position to eye coords
   vec3 tnorm = normalize( NormalMatrix * VertexNormal);
   vec4 eyeCoords = ModelViewMatrix * vec4(VertexPosition,1.0);
