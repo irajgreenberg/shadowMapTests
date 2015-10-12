@@ -11,8 +11,14 @@ uniform vec4 LightPosition; // Light position in eye coords.
 uniform vec3 Kd; // Diffuse reflectivity
 uniform vec3 Ld; // Light source intensity
 uniform mat3 NormalMatrix;
-uniform bool isShadowRenderPass; // shadow
+
 uniform vec3 camera; // camera
+
+// shadow map
+uniform bool isShadowRenderPass; // shadow
+uniform mat4 lightModelView;
+uniform mat4 lightProjection;
+uniform mat4 lightModelViewProjection;
 
 
 void main() {
@@ -32,7 +38,7 @@ void main() {
   // specular
   vec3 viewDir = normalize(camera - vPos);
   vec3 halfDir = normalize(lightVec + viewDir);
-  float spec = pow(max(dot(n, halfDir), 0.0), 32.0);
+  float spec = pow(max(dot(n, halfDir), 0.0), 12.0);
   vec3 specular = vec3(0.9) * spec;
 
   // The diffuse shading equation
