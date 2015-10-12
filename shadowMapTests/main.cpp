@@ -30,6 +30,9 @@ glm::vec3 KD, LD;
 // Light Uniforms
 GLuint LPOS_U, KD_U, LD_U; 
 
+// camera
+GLuint camera_U;
+
 
 GLuint vaoID, vboID;
 vector<glm::vec3> vecs;
@@ -57,13 +60,13 @@ GLuint isShadowRenderPass_U = 0;
 
 
 int main(void) {
-	
+
 	// initiaze GLFW window
 	GLFWwindow* window;
 	glfwSetErrorCallback(error_callback);
 	if (!glfwInit())
 		exit(EXIT_FAILURE);
-	window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+	window = glfwCreateWindow(1024, 768, "Simple example", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();
@@ -100,9 +103,10 @@ int main(void) {
 	//ProtoShader* shadowShader = new ProtoShader("shadow.vert", "shadow.frag");
 	shader->bind();
 
+	glm::vec3 camera(0.0, 25.0, 55.0);
 
 	// matrices
-	V = glm::lookAt(glm::vec3(0.0, 25.0, 55.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	V = glm::lookAt(camera, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	P = glm::perspective(45.0f, 4.0f/3.0f, 0.1f, 1000.0f);
 
 	// matrix uniforms
@@ -112,8 +116,8 @@ int main(void) {
 	MVP_U = glGetUniformLocation(ProtoShader::getID_2(), "MVP");
 
 	// lights
-	LPOS = glm::vec4(-85.5, 25, 0, 1.0);
-	KD = glm::vec3(1, 1, 1);
+	LPOS = glm::vec4(0, 20, -50.5, 1.0);
+	KD = glm::vec3(.75, .75, .75);
 	LD = glm::vec3(1, 1, 1);
 
 	// light view for testing
@@ -130,11 +134,14 @@ int main(void) {
 	KD_U = glGetUniformLocation(ProtoShader::getID_2(), "Kd");
 	LD_U = glGetUniformLocation(ProtoShader::getID_2(), "Ld");
 
+
+	camera_U = glGetUniformLocation(ProtoShader::getID_2(), "camera");
 	// shadow flag boolean
 	isShadowRenderPass_U = glGetUniformLocation(ProtoShader::getID_2(), "isShadowRenderPass");
 
 	
 
+	// CUBES
 	const int cubeCount = 170;
 	Cube cubes[cubeCount];
 
@@ -144,6 +151,9 @@ int main(void) {
 		locs[i] = { random(-30.0f, 30.0f), y, random(-30.0f, 30.0f) };
 		cubes[i] = Cube(random(1, 3), random(1, 17), random(1, 3));
 	}
+
+	// TOROID
+	Toroid t(24, 24, 4, 14);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -159,6 +169,8 @@ int main(void) {
 		glUniform4fv(LPOS_U, 1, &LPOS.x);
 		glUniform3fv(KD_U, 1, &KD.x);
 		glUniform3fv(LD_U, 1, &LD.x);
+
+		glUniform3fv(camera_U, 1, &camera.x);
 		
 		float ratio;
 		int width, height;
@@ -186,6 +198,7 @@ int main(void) {
 		
 		// render pass 2 
 		isShadowRenderPass = 0;
+
 		glUniform1i(isShadowRenderPass_U, isShadowRenderPass);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		//ConfigureShaderAndMatrices();
@@ -200,6 +213,13 @@ int main(void) {
 			cubes[i].display();
 			pop();
 		}
+
+		static float cntr = 0;
+		push();
+		translate({ 0, 14.0, 0 });
+		rotate(cntr+= .02, glm::vec3(.85, .45, .25));
+		t.display();
+		pop();
 		
 
 		glfwSwapBuffers(window);

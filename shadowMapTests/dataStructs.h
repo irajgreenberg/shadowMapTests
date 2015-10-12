@@ -167,6 +167,137 @@ struct Cube{
 	}
 
 };
+
+struct Toroid{
+	GLuint toroidVAO = 0;
+	int innerDetail, outerDetail;
+	float innerRadius, outerRadius;
+	std::vector<Index> inds;
+	std::vector<glm::vec3> vecs;
+	std::vector<Face> faces;
+	std::vector<Vertex> verts;
+
+	Toroid() {
+	}
+
+	Toroid(int innerDetail, int outerDetail, float innerRadius, float outerRadius) :
+		innerDetail(innerDetail), outerDetail(outerDetail), innerRadius(innerRadius), outerRadius(outerRadius) {
+		__init();
+	}
+
+	void __init(){
+		float theta = 0.0;
+		float thetaRot = TWO_PI / innerDetail;
+		float phiRot = TWO_PI / outerDetail;
+		
+		for (int i = 0; i < innerDetail; ++i){
+			float phi = 0.0;
+			// z-axis rot
+			float x = outerRadius + cos(theta)*innerRadius;
+			float y = sin(theta)*innerRadius;
+			float z = 0.0;
+			
+			for (int j = 0; j < outerDetail; ++j){
+				// y-axis rot
+				float vz = cos(phi)*z - sin(phi)*x;
+				float vx = sin(phi)*z + cos(phi)*x;
+				vecs.push_back(glm::vec3(vx, y, vz));
+				phi += phiRot;
+
+				int p0 = i*outerDetail + j;
+				int p1 = i*outerDetail + (j + 1);
+				int p2 = (i + 1)*outerDetail + j;
+				int p3 = (i + 1)*outerDetail + (j + 1);
+
+				if (i < innerDetail-1){
+					if (j < outerDetail - 1){
+					// nothing needed here
+					}
+					else if (j == outerDetail - 1){
+						p1 = i*outerDetail;
+						p3 = (i + 1)*outerDetail;
+					}
+				}
+				if (i == innerDetail - 1) {
+					if (j < outerDetail - 1){
+						p2 = j;
+						p3 = j + 1;
+					}
+					else if (j == outerDetail - 1){
+						p1 = i*outerDetail;
+						p2 = j;
+						p3 = 0;
+					}
+
+				}
+				// fill indices
+				inds.push_back({ p0, p1, p2 });
+				inds.push_back({ p1, p3, p2 });
+			}
+			theta += thetaRot;
+		}
+		
+		for (const auto& i: inds) {
+			faces.push_back({ &vecs[i.i0], &vecs[i.i1], &vecs[i.i2] });
+		}
+
+		// calc vertex normals
+		for (const auto& v : vecs) {
+			glm::vec3 vn{ 0, 0, 0 };
+			for (auto& f : faces) {
+				if (&v == f.v0_ptr || &v == f.v1_ptr || &v == f.v2_ptr){
+					vn += f.getNorm();
+				}
+			}
+			vn = glm::normalize(vn);
+			//verts.push_back( {v, vn, { random(1.0), random(1.0), random(1.0) }} );
+			verts.push_back({ v, vn, { .5, .45, .65 } });
+		}
+
+		// 1. Create and bind VAO
+		glGenVertexArrays(1, &toroidVAO); // Create VAO
+		glBindVertexArray(toroidVAO); // Bind VAO (making it active)
+		//2. Create and bind VBO
+		GLuint toroidVBO = 0;
+		// a. Vertex attributes
+		glGenBuffers(1, &toroidVBO); // Create VBO ID
+		glBindBuffer(GL_ARRAY_BUFFER, toroidVBO); // Bind vertex attributes VBO
+		int vertsDataSize = verts.size() * 9 * sizeof(GLfloat);
+		glBufferData(GL_ARRAY_BUFFER, vertsDataSize, NULL, GL_STREAM_DRAW); // allocate space
+		//trace("vertsDataSize =", vertsDataSize);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, vertsDataSize, &verts[0]); // upload the data
+
+
+		// b. Indices  uses ELEMENT_ARRAY_BUFFER
+		GLuint toroidIndexVBO = 0;
+		glGenBuffers(1, &toroidIndexVBO); // Generate buffer
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, toroidIndexVBO); // Bind indices VBO
+		int indsDataSize = inds.size() * 3 * sizeof (GL_UNSIGNED_INT);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indsDataSize, NULL, GL_STATIC_DRAW); // allocate
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indsDataSize, &inds[0]); // upload the data
+
+
+		const int STRIDE = 9;
+		for (int i = 0; i < 3; i++) {
+			glEnableVertexAttribArray(i);
+		}
+		// (x, y, z, nx, ny, nz, r, g, b)
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(0)); // pos
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(12)); // norm
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(24)); // col
+
+		// Disable VAO
+		glEnableVertexAttribArray(0);
+		glBindVertexArray(0);
+	}
+
+	void display(){
+		glBindVertexArray(toroidVAO);
+		glDrawElements(GL_TRIANGLES, verts.size() * 9, GL_UNSIGNED_INT, nullptr);
+		glBindVertexArray(0);
+	}
+
+};
 /****************************
 *    END DATA STRUCTURES    *
 ****************************/
