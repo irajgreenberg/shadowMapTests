@@ -1,6 +1,7 @@
 #version 400
 
 out vec4 FragColor;
+out float FragDepth;
 
 in vec3 vPos;
 in vec3 vNorm;
@@ -15,7 +16,7 @@ uniform mat3 NormalMatrix;
 uniform vec3 camera; // camera
 
 // shadow map
-uniform bool isShadowRenderPass; // shadow
+uniform bool isShadowRenderPass; // shadow map pass flag
 uniform mat4 lightModelView;
 uniform mat4 lightProjection;
 uniform mat4 lightModelViewProjection;
@@ -38,18 +39,19 @@ void main() {
   // specular
   vec3 viewDir = normalize(camera - vPos);
   vec3 halfDir = normalize(lightVec + viewDir);
-  float spec = pow(max(dot(n, halfDir), 0.0), 12.0);
+  float spec = pow(max(dot(n, halfDir), 0.0), 32.0);
   vec3 specular = vec3(0.9) * spec;
 
   // The diffuse shading equation
   // vec3 LightIntensity = Ld * Kd * max( dot( lightVec, n ), 0.0 ) + ambient;
 
+	if(isShadowRenderPass){
+		 FragDepth = gl_FragCoord.z;
+	} else {
+		FragDepth = gl_FragCoord.z;
+		FragColor = vec4(FragDepth, FragDepth, FragDepth, 1.0f);
+		//FragColor = vec4(ambient + diffuse + specular, 1.0f);
+		//FragDepth = gl_FragCoord.z;
+	}
 
- // if(isShadowRenderPass){
-	//  FragColor = vec4(LightIntensity*vertCol, 1.0);
-	//} else {
-	//  FragColor = vec4(LightIntensity, 1.0);
- // }
-
- FragColor = vec4(ambient + diffuse + specular, 1.0f);
 }

@@ -103,7 +103,7 @@ int main(void) {
 	//ProtoShader* shadowShader = new ProtoShader("shadow.vert", "shadow.frag");
 	shader->bind();
 
-	glm::vec3 camera(0.0, 85.0, -40);
+	glm::vec3 camera(0.0, 50, 67);
 
 	// matrices
 	V = glm::lookAt(camera, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
@@ -116,7 +116,7 @@ int main(void) {
 	MVP_U = glGetUniformLocation(ProtoShader::getID_2(), "MVP");
 
 	// lights
-	LPOS = glm::vec4(0, 30, 0, 1.0);
+	LPOS = glm::vec4(0, 100, -45, 1.0);
 	KD = glm::vec3(.75, .75, .75);
 	LD = glm::vec3(1, 1, 1);
 
@@ -174,16 +174,15 @@ int main(void) {
 		rotate(rot += .0025, glm::vec3(0, 1, 0));
 
 		// render pass 1 to depth map
+		isShadowRenderPass = 1;
 		glUniform1i(isShadowRenderPass_U, isShadowRenderPass);
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO); // bind depth buffer
 		glClear(GL_DEPTH_BUFFER_BIT);
-		isShadowRenderPass = 1;
-		//ConfigureShaderAndMatrices();
 
-		GLfloat near_plane = 1.0f, far_plane = 7.5f;
-		LP = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-		LV = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(0.0f), glm::vec3(1.0));
+		//GLfloat near_plane = 1.0f, far_plane = 7.5f;
+		LP = glm::ortho(-10, 10, -10, 10, -10, 20);
+		LV = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0f), glm::vec3(1.0));
 		//glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 		
 		//LV = glm::lookAt(glm::vec3(LPOS.x, LPOS.y, LPOS.z), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
@@ -203,11 +202,11 @@ int main(void) {
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		
-		
 		// render pass 2 
+		isShadowRenderPass = 0;
 		glUniform1i(isShadowRenderPass_U, isShadowRenderPass);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		isShadowRenderPass = 0;
+		
 		//ConfigureShaderAndMatrices();
 		glBindTexture(GL_TEXTURE_2D, depthMap);
 		glViewport(0, 0, width, height);

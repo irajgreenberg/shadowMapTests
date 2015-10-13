@@ -13,7 +13,8 @@ out vec3 vertCol;
 //uniform mat4 ProjectionMatrix;
 uniform mat4 MVP; // Projection * ModelView
 
-// shadow
+uniform bool isShadowRenderPass; // shadow map pass flag
+uniform mat4 lightModelViewProjection;
 
 void main() {
 	
@@ -23,5 +24,9 @@ void main() {
   vertCol = VertexColor;
 
   // Convert position to clip coordinates and pass along
-  gl_Position = MVP * vec4(VertexPosition,1.0);
+  if(isShadowRenderPass){
+	gl_Position = lightModelViewProjection * vec4(VertexPosition,1.0);
+  } else {
+	gl_Position = MVP * vec4(VertexPosition,1.0);
+  }
 }
