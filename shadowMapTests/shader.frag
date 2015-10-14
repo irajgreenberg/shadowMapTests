@@ -46,10 +46,13 @@ void main() {
   // vec3 LightIntensity = Ld * Kd * max( dot( lightVec, n ), 0.0 ) + ambient;
 
 	if(isShadowRenderPass){
-		 FragDepth = gl_FragCoord.z;
+		FragDepth = gl_FragCoord.z;
+		FragColor = vec4(FragDepth, FragDepth, FragDepth, 1.0f);
 	} else {
 		FragDepth = gl_FragCoord.z;
 		FragColor = vec4(FragDepth, FragDepth, FragDepth, 1.0f);
+		
+		
 		//FragColor = vec4(ambient + diffuse + specular, 1.0f);
 		//FragDepth = gl_FragCoord.z;
 	}
