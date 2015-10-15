@@ -17,9 +17,9 @@ uniform vec3 camera; // camera
 
 // shadow map
 uniform bool isShadowRenderPass; // shadow map pass flag
-uniform mat4 lightModelView;
-uniform mat4 lightProjection;
-uniform mat4 lightModelViewProjection;
+uniform mat4 LMV;
+uniform mat4 LP;
+uniform mat4 LMVP;
 
 
 void main() {
@@ -53,7 +53,7 @@ void main() {
 		FragColor = vec4(FragDepth, FragDepth, FragDepth, 1.0f);
 		
 		
-		//FragColor = vec4(ambient + diffuse + specular, 1.0f);
+		FragColor = vec4(ambient + diffuse + specular, 1.0f);
 		//FragDepth = gl_FragCoord.z;
 	}
 

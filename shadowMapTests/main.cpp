@@ -17,7 +17,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 glm::mat4 M, V, P, MV, MVP;
 glm::mat3 N;
 // Light matrices
-glm::mat4 LV, LP, LMV, LMVP;
+glm::mat4 LV, LP, LMV, LMVP, B, BP;
 
 // matrix uniforms
 GLuint MV_U, P_U, MVP_U, N_U;
@@ -123,7 +123,15 @@ int main(void) {
 	//LP = glm::ortho(-10, 10, -10, 10, -10, 20);
 	LV = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
 	LP = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
+	B = glm::mat4 (
+		0.5f, 0.0, 0.0, 0.0,
+		0.0, 0.5f, 0.0, 0.0,
+		0.0, 0.0, 0.5f, 0.0,
+		0.5f, 0.5f, 0.5f, 1.0
+	);
 
+	BP = B * LP;
+	LMVP = BP*LV;
 
 	// light view for testing
 	//V = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
@@ -375,8 +383,8 @@ void concat(){
 	glUniformMatrix4fv(MVP_U, 1, GL_FALSE, &MVP[0][0]);
 	glUniformMatrix3fv(N_U, 1, GL_FALSE, &N[0][0]);
 
-	LMV = LV * M;
-	LMVP = LP * LMV;
+	//LMV = LV * M;
+	//LMVP = LP * LMV;
 	glUniformMatrix4fv(LMV_U, 1, GL_FALSE, &LMV[0][0]);
 	glUniformMatrix4fv(LP_U, 1, GL_FALSE, &LP[0][0]);
 	glUniformMatrix4fv(LMVP_U, 1, GL_FALSE, &LMVP[0][0]);
