@@ -7,11 +7,13 @@ in vec3 vPos;
 in vec3 vNorm;
 in vec3 vertCol;
 
-uniform mat4 ModelViewMatrix;
-uniform vec4 LightPosition; // Light position in eye coords.
+in vec4 shadowCoords;
+
+uniform mat4 MV;
+uniform vec4 LightPos; // Light position in eye coords.
 uniform vec3 Kd; // Diffuse reflectivity
 uniform vec3 Ld; // Light source intensity
-uniform mat3 NormalMatrix;
+uniform mat3 N;
 
 uniform vec3 camera; // camera
 
@@ -21,13 +23,19 @@ uniform mat4 LMV;
 uniform mat4 LP;
 uniform mat4 LMVP;
 
+uniform sampler2DShadow shadowMap;
+
 
 void main() {
+	
+  if(isShadowRenderPass){
+	return;
+  }
 
-  vec3 n = normalize(NormalMatrix * vNorm);
+  vec3 n = normalize(N * vNorm);
   // Convert normal and position to eye coords
-  vec4 eyeCoords = ModelViewMatrix * vec4(vPos,1.0);
-  vec3 lightVec = normalize(vec3(LightPosition - eyeCoords));
+  vec4 eyeCoords = MV * vec4(vPos,1.0);
+  vec3 lightVec = normalize(vec3(LightPos - eyeCoords));
   
    // ambient
   vec3 ambient = vertCol * 0.105;
@@ -45,16 +53,14 @@ void main() {
   // The diffuse shading equation
   // vec3 LightIntensity = Ld * Kd * max( dot( lightVec, n ), 0.0 ) + ambient;
 
-	if(isShadowRenderPass){
-		FragDepth = gl_FragCoord.z;
-		FragColor = vec4(FragDepth, FragDepth, FragDepth, 1.0f);
-	} else {
-		FragDepth = gl_FragCoord.z;
-		FragColor = vec4(FragDepth, FragDepth, FragDepth, 1.0f);
-		
-		
-		FragColor = vec4(ambient + diffuse + specular, 1.0f);
-		//FragDepth = gl_FragCoord.z;
-	}
+  if (shadowCoords.w>1){
+    float shadow = textureProj(shadowMap, shadowCoords);
+    diffuse = mix(diffuse, diffuse*shadow, 0.5);
+	 FragColor = vec4(ambient + diffuse + specular, 1.0f);
+  } else {
+   FragColor = vec4(1, 1, 1, 1.0f);
+  }
+
+
 
 }

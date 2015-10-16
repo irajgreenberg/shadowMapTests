@@ -20,7 +20,7 @@ glm::mat3 N;
 glm::mat4 LV, LP, LMV, LMVP, B, BP;
 
 // matrix uniforms
-GLuint MV_U, P_U, MVP_U, N_U;
+GLuint M_U, MV_U, P_U, MVP_U, N_U;
 GLuint LMV_U, LP_U, LMVP_U;
 
 // lights
@@ -28,7 +28,7 @@ glm::vec4 LPOS;
 glm::vec3 KD, LD;
 
 // Light Uniforms
-GLuint LPOS_U, KD_U, LD_U; 
+GLuint LPOS_U, KD_U, LD_U;
 
 // camera
 GLuint camera_U;
@@ -41,7 +41,7 @@ void initGeom();
 void drawRect(glm::vec3);
 void drawCube(glm::vec3);
 
-std::stack <glm::mat4> matrixStack; 
+std::stack <glm::mat4> matrixStack;
 void push();
 void pop();
 void concat();
@@ -50,13 +50,13 @@ void rotate(float ang, const glm::vec3& axis);
 void scale(const glm::vec3& v);
 
 // For shadowmap
-GLuint depthMapFBO = 0; 
+GLuint depthMapFBO = 0;
 GLuint depthMap = 0;
 const int SHADOW_WIDTH = 1024;
 const int SHADOW_HEIGHT = 1024;
 void createShadowMap();
 GLint isShadowRenderPass = 0; // flag for shader during shadowing pass
-GLuint isShadowRenderPass_U = 0; 
+GLuint isShadowRenderPass_U = 0;
 
 
 int main(void) {
@@ -107,28 +107,33 @@ int main(void) {
 
 	// matrices
 	V = glm::lookAt(camera, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-	P = glm::perspective(45.0f, 4.0f/3.0f, 0.1f, 1000.0f);
+	P = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
+
+	MV = V * M;
+	N = glm::transpose(glm::inverse(glm::mat3(MV)));
+	MVP = P * MV;
 
 	// matrix uniforms
-	MV_U = glGetUniformLocation(ProtoShader::getID_2(), "ModelViewMatrix");
-	P_U = glGetUniformLocation(ProtoShader::getID_2(), "ProjectionMatrix");
-	N_U = glGetUniformLocation(ProtoShader::getID_2(), "NormalMatrix");
+	M_U = glGetUniformLocation(ProtoShader::getID_2(), "M"); 
+	MV_U = glGetUniformLocation(ProtoShader::getID_2(), "MV");
+	P_U = glGetUniformLocation(ProtoShader::getID_2(), "P");
+	N_U = glGetUniformLocation(ProtoShader::getID_2(), "N");
 	MVP_U = glGetUniformLocation(ProtoShader::getID_2(), "MVP");
 
 	// lights
 	LPOS = glm::vec4(0, 10, 150, 1.0);
 	KD = glm::vec3(.75, .75, .75);
 	LD = glm::vec3(1, 1, 1);
-	
+
 	//LP = glm::ortho(-10, 10, -10, 10, -10, 20);
 	LV = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
 	LP = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
-	B = glm::mat4 (
+	B = glm::mat4(
 		0.5f, 0.0, 0.0, 0.0,
 		0.0, 0.5f, 0.0, 0.0,
 		0.0, 0.0, 0.5f, 0.0,
 		0.5f, 0.5f, 0.5f, 1.0
-	);
+		);
 
 	BP = B * LP;
 	LMVP = BP*LV;
@@ -136,14 +141,14 @@ int main(void) {
 	// light view for testing
 	//V = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
-	
+
 	// Light Matrix Uniforms
 	LMV_U = glGetUniformLocation(ProtoShader::getID_2(), "LMV");
 	LP_U = glGetUniformLocation(ProtoShader::getID_2(), "LP");
 	LMVP_U = glGetUniformLocation(ProtoShader::getID_2(), "LMVP");
 
 	// Light Uniforms
-	LPOS_U = glGetUniformLocation(ProtoShader::getID_2(), "LightPosition");
+	LPOS_U = glGetUniformLocation(ProtoShader::getID_2(), "LightPos");
 	KD_U = glGetUniformLocation(ProtoShader::getID_2(), "Kd");
 	LD_U = glGetUniformLocation(ProtoShader::getID_2(), "Ld");
 
@@ -152,7 +157,7 @@ int main(void) {
 	// shadow flag boolean
 	isShadowRenderPass_U = glGetUniformLocation(ProtoShader::getID_2(), "isShadowRenderPass");
 
-	
+
 
 	// CUBES
 	const int cubeCount = 170;
@@ -168,10 +173,28 @@ int main(void) {
 	// TOROID
 	Toroid t(24, 24, 4, 14);
 
+
+
+
+
+	// update in shader
+	glUniformMatrix4fv(M_U, 1, GL_FALSE, &M[0][0]);
+	glUniformMatrix4fv(MV_U, 1, GL_FALSE, &MV[0][0]);
+	glUniformMatrix4fv(MVP_U, 1, GL_FALSE, &MVP[0][0]);
+	glUniformMatrix3fv(N_U, 1, GL_FALSE, &N[0][0]);
+
+	glUniformMatrix4fv(LMV_U, 1, GL_FALSE, &LMV[0][0]);
+	glUniformMatrix4fv(LP_U, 1, GL_FALSE, &LP[0][0]);
+	glUniformMatrix4fv(LMVP_U, 1, GL_FALSE, &LMVP[0][0]);
+
+
+	// create shadow map
+	createShadowMap();
+
 	while (!glfwWindowShouldClose(window))
 	{
 		M = glm::mat4(1.0f); // set to identity;
-		
+
 		//MV = V * M;
 		//N = glm::transpose(glm::inverse(glm::mat3(MV)));
 		//MVP = P * MV;
@@ -182,54 +205,34 @@ int main(void) {
 
 
 		glUniform4fv(LPOS_U, 1, &LPOS.x);
-		glUniform3fv(KD_U, 1, &KD.x);
-		glUniform3fv(LD_U, 1, &LD.x);
+	//	glUniform3fv(KD_U, 1, &KD.x);
+	//	glUniform3fv(LD_U, 1, &LD.x);
 
 		glUniform3fv(camera_U, 1, &camera.x);
-		
+
 		float ratio;
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
-		
+
 		static float rot = 0;
 		rotate(rot += .0025, glm::vec3(0, 1, 0));
 
-		// render pass 1 to depth map
+		/*****************************
+		* render pass 1 to depth map *
+		*****************************/
 		isShadowRenderPass = 1;
 		glUniform1i(isShadowRenderPass_U, isShadowRenderPass);
+
+		
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO); // bind depth buffer
+		glCullFace(GL_FRONT);
 		glClear(GL_DEPTH_BUFFER_BIT);
 
-		//LMV = LV * M;
-		//LMVP = LP * LMV;
-		//glUniformMatrix4fv(LMV_U, 1, GL_FALSE, &LMV[0][0]);
-		//glUniformMatrix4fv(LP_U, 1, GL_FALSE, &LP[0][0]);
-		//glUniformMatrix4fv(LMVP_U, 1, GL_FALSE, &LMVP[0][0]);
-
-		drawRect({ 135, 1, 135 });
+		//drawRect({ 135, 1, 135 });
 		for (auto i = 0; i < cubeCount; i++) {
 			push();
 			translate({ locs[i].x, locs[i].y + cubes[i].h / 2.0, locs[i].z });
-			cubes[i].display();
-			pop();
-		}
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		
-		// render pass 2 
-		isShadowRenderPass = 0;
-		glUniform1i(isShadowRenderPass_U, isShadowRenderPass);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
-		//ConfigureShaderAndMatrices();
-		glBindTexture(GL_TEXTURE_2D, depthMap);
-		glViewport(0, 0, width, height);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
-		drawRect({ 135, 1, 135 });
-
-		for (auto i = 0; i < cubeCount; i++) {
-			push();
-			translate({ locs[i].x, locs[i].y+cubes[i].h/2.0, locs[i].z });
 			cubes[i].display();
 			pop();
 		}
@@ -237,7 +240,39 @@ int main(void) {
 		static float cntr = 0;
 		push();
 		translate({ 0, 14.0, 0 });
-		rotate(cntr+= .02, glm::vec3(.85, .45, .25));
+		rotate(cntr += .02, glm::vec3(.85, .45, .25));
+		t.display();
+		pop();
+
+		// unbind framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// prepare for screen rendering
+		glCullFace(GL_BACK);
+		
+
+		/**************************
+		* render pass 2 to screen *
+		**************************/
+		isShadowRenderPass = 0;
+		glUniform1i(isShadowRenderPass_U, isShadowRenderPass);
+		
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glViewport(0, 0, width, height);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		drawRect({ 135, 1, 135 });
+
+		for (auto i = 0; i < cubeCount; i++) {
+			push();
+			translate({ locs[i].x, locs[i].y + cubes[i].h / 2.0, locs[i].z });
+			cubes[i].display();
+			pop();
+		}
+
+		static float cntr2 = 0;
+		push();
+		translate({ 0, 14.0, 0 });
+		rotate(cntr2 += .02, glm::vec3(.85, .45, .25));
 		t.display();
 		pop();
 		
@@ -379,6 +414,7 @@ void concat(){
 	N = glm::transpose(glm::inverse(glm::mat3(MV)));
 	MVP = P * MV;
 	// update in shader
+	glUniformMatrix4fv(M_U, 1, GL_FALSE, &M[0][0]);
 	glUniformMatrix4fv(MV_U, 1, GL_FALSE, &MV[0][0]);
 	glUniformMatrix4fv(MVP_U, 1, GL_FALSE, &MVP[0][0]);
 	glUniformMatrix3fv(N_U, 1, GL_FALSE, &N[0][0]);
@@ -409,6 +445,7 @@ void createShadowMap() {
 	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
 	glGenTextures(1, &depthMap);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
 		SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -421,5 +458,15 @@ void createShadowMap() {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
 	glDrawBuffer(GL_NONE); // dont need color, but FBO needs color buffer
 	glReadBuffer(GL_NONE);
+
+	// check staus
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status == GL_FRAMEBUFFER_COMPLETE){
+		std::cout << "FBO setup successful" << std::endl;
+	}
+	else {
+		std::cout << "FBO setup failure" << std::endl;
+	}
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

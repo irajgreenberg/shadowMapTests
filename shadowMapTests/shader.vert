@@ -8,9 +8,15 @@ out vec3 vPos;
 out vec3 vNorm;
 out vec3 vertCol;
 
-//uniform mat4 ModelViewMatrix;
-//uniform mat3 NormalMatrix;
-//uniform mat4 ProjectionMatrix;
+// for shadow
+//out vec3 vEyeSpaceNormal;
+//out vec3 vEyeSpacePos;
+out vec4 shadowCoords;
+
+uniform mat4 M;
+uniform mat4 MV;
+//uniform mat3 N;
+//uniform mat4 P;
 uniform mat4 MVP; // Projection * ModelView
 
 uniform bool isShadowRenderPass; // shadow map pass flag
@@ -23,10 +29,8 @@ void main() {
   vNorm = VertexNormal;
   vertCol = VertexColor;
 
-  // Convert position to clip coordinates and pass along
-  if(isShadowRenderPass){
-	gl_Position = LMVP * vec4(VertexPosition,1.0);
-  } else {
-	gl_Position = MVP * vec4(VertexPosition,1.0);
-  }
+  // for shadows
+  shadowCoords = LMVP * (M*vec4(VertexPosition,1));
+  gl_Position = MVP * vec4(VertexPosition,1.0);
+
 }
