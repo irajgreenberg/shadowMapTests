@@ -33,10 +33,13 @@ struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 norm;
 	glm::vec3 col;
+	glm::vec2 tex;
 
 	Vertex(){}
 	Vertex(const glm::vec3& pos, const glm::vec3& norm, const glm::vec3& col) :
 		pos(pos), norm(norm), col(col) {}
+	Vertex(const glm::vec3& pos, const glm::vec3& norm, const glm::vec3& col, const glm::vec2& tex) :
+		pos(pos), norm(norm), col(col), tex(tex) {}
 };
 
 struct Face {
@@ -121,6 +124,7 @@ struct Cube{
 			verts[i].pos = vecs[i];
 			verts[i].norm = v;
 			verts[i].col = { random(1.0), random(1.0), random(1.0) };
+			verts[i].tex = { 0, 0 }; //arbitrary tex uv's
 		}
 
 		// 1. Create and bind VAO
@@ -131,7 +135,7 @@ struct Cube{
 		// a. Vertex attributes
 		glGenBuffers(1, &cubeVBO); // Create VBO ID
 		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO); // Bind vertex attributes VBO
-		int vertsDataSize = 8 * 9 * sizeof(GLfloat);
+		int vertsDataSize = 8 * 11 * sizeof(GLfloat);
 		glBufferData(GL_ARRAY_BUFFER, vertsDataSize, NULL, GL_STREAM_DRAW); // allocate space
 		//trace("vertsDataSize =", vertsDataSize);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, vertsDataSize, &verts[0]); // upload the data
@@ -146,14 +150,15 @@ struct Cube{
 		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indsDataSize, &inds[0]); // upload the data
 
 
-		const int STRIDE = 9;
-		for (int i = 0; i < 3; i++) {
+		const int STRIDE = 11;
+		for (int i = 0; i < 4; i++) {
 			glEnableVertexAttribArray(i);
 		}
-		// (x, y, z, nx, ny, nz, r, g, b)
+		// (x, y, z, nx, ny, nz, r, g, b, u, v)
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(0)); // pos
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(12)); // norm
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(24)); // col
+		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(36)); // tex
 
 		// Disable VAO
 		glEnableVertexAttribArray(0);
@@ -162,7 +167,7 @@ struct Cube{
 
 	void display(){
 		glBindVertexArray(cubeVAO);
-		glDrawElements(GL_TRIANGLES, 8 * 9, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, 8 * 11, GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
 	}
 
@@ -251,7 +256,7 @@ struct Toroid{
 			}
 			vn = glm::normalize(vn);
 			//verts.push_back( {v, vn, { random(1.0), random(1.0), random(1.0) }} );
-			verts.push_back({ v, vn, { .5, .45, .65 } });
+			verts.push_back({ v, vn, { .5, .45, .65 }, {v.x, v.y} });
 		}
 
 		// 1. Create and bind VAO
@@ -262,7 +267,7 @@ struct Toroid{
 		// a. Vertex attributes
 		glGenBuffers(1, &toroidVBO); // Create VBO ID
 		glBindBuffer(GL_ARRAY_BUFFER, toroidVBO); // Bind vertex attributes VBO
-		int vertsDataSize = verts.size() * 9 * sizeof(GLfloat);
+		int vertsDataSize = verts.size() * 11 * sizeof(GLfloat);
 		glBufferData(GL_ARRAY_BUFFER, vertsDataSize, NULL, GL_STREAM_DRAW); // allocate space
 		//trace("vertsDataSize =", vertsDataSize);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, vertsDataSize, &verts[0]); // upload the data
@@ -277,14 +282,15 @@ struct Toroid{
 		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indsDataSize, &inds[0]); // upload the data
 
 
-		const int STRIDE = 9;
-		for (int i = 0; i < 3; i++) {
+		const int STRIDE = 11;
+		for (int i = 0; i < 4; i++) {
 			glEnableVertexAttribArray(i);
 		}
 		// (x, y, z, nx, ny, nz, r, g, b)
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(0)); // pos
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(12)); // norm
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(24)); // col
+		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(36)); // tex
 
 		// Disable VAO
 		glEnableVertexAttribArray(0);
@@ -293,7 +299,7 @@ struct Toroid{
 
 	void display(){
 		glBindVertexArray(toroidVAO);
-		glDrawElements(GL_TRIANGLES, verts.size() * 9, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, verts.size() * 11, GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
 	}
 

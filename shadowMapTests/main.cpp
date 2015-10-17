@@ -121,13 +121,13 @@ int main(void) {
 	MVP_U = glGetUniformLocation(ProtoShader::getID_2(), "MVP");
 
 	// lights
-	LPOS = glm::vec4(-45, 30, 75, 1.0);
+	LPOS = glm::vec4(-45, 55, 65, 1.0);
 	KD = glm::vec3(.75, .75, .75);
 	LD = glm::vec3(1, 1, 1);
 
 	//LP = glm::ortho(-10, 10, -10, 10, -10, 20);
 	LV = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-	LP = glm::perspective(25.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
+	LP = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
 	B = glm::mat4(
 		0.5f, 0.0, 0.0, 0.0,
 		0.0, 0.5f, 0.0, 0.0,
@@ -213,6 +213,7 @@ int main(void) {
 		float ratio;
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
+		
 
 		static float rot = 0;
 		rotate(rot += .0025, glm::vec3(0, 1, 0));
@@ -227,7 +228,8 @@ int main(void) {
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO); // bind depth buffer
 		glCullFace(GL_FRONT);
-		glClear(GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//glClear(GL_DEPTH_BUFFER_BIT);
 
 		//drawRect({ 135, 1, 135 });
 		for (auto i = 0; i < cubeCount; i++) {
@@ -254,6 +256,7 @@ int main(void) {
 		/**************************
 		* render pass 2 to screen *
 		**************************/
+		glDrawBuffer(GL_BACK_LEFT);
 		isShadowRenderPass = 0;
 		glUniform1i(isShadowRenderPass_U, isShadowRenderPass);
 		
@@ -261,6 +264,7 @@ int main(void) {
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		drawRect({ 135, 1, 135 });
+		
 
 		for (auto i = 0; i < cubeCount; i++) {
 			push();
@@ -296,10 +300,10 @@ void drawRect(glm::vec3 scl){
 	vecs.push_back(glm::vec3(-0.5*scl.x, 0.0, -0.5*scl.z));
 
 	Face f1(&vecs.at(0), &vecs.at(1), &vecs.at(2));
-	verts.push_back(Vertex(vecs.at(0), f1.getNorm(), glm::vec3(1.0, 0.0, 0.0)));
-	verts.push_back(Vertex(vecs.at(1), f1.getNorm(), glm::vec3(0.0, 1.0, 0.0)));
-	verts.push_back(Vertex(vecs.at(2), f1.getNorm(), glm::vec3(0.0, 0.0, 1.0)));
-	verts.push_back(Vertex(vecs.at(3), f1.getNorm(), glm::vec3(1.0, 0.0, 1.0)));
+	verts.push_back(Vertex(vecs.at(0), f1.getNorm(), glm::vec3(1.0, 0.0, 0.0), { 0.0, 0.0 }));
+	verts.push_back(Vertex(vecs.at(1), f1.getNorm(), glm::vec3(0.0, 1.0, 0.0), { 1.0, 0.0 }));
+	verts.push_back(Vertex(vecs.at(2), f1.getNorm(), glm::vec3(0.0, 0.0, 1.0), { 1.0, 1.0 }));
+	verts.push_back(Vertex(vecs.at(3), f1.getNorm(), glm::vec3(1.0, 0.0, 1.0), { 0.0, 1.0 }));
 
 	vector<GLfloat> prims;
 	for (int i = 0; i < verts.size(); i++) {
@@ -312,6 +316,8 @@ void drawRect(glm::vec3 scl){
 		prims.push_back(verts.at(i).col.x);
 		prims.push_back(verts.at(i).col.y);
 		prims.push_back(verts.at(i).col.z);
+		prims.push_back(verts.at(i).tex.x);
+		prims.push_back(verts.at(i).tex.y);
 	}
 
 	// 1. Create and bind VAO
@@ -326,14 +332,15 @@ void drawRect(glm::vec3 scl){
 	//trace("vertsDataSize =", vertsDataSize);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, primsDataSize, &prims[0]); // upload the data
 
-	const int STRIDE = 9;
-	for (int i = 0; i < 3; i++) {
+	const int STRIDE = 11;
+	for (int i = 0; i < 4; i++) {
 		glEnableVertexAttribArray(i);
 	}
 	// (x, y, z, nx, ny, nz, r, g, b)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(0)); // pos
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(12)); // norm
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(24)); // col
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, STRIDE * sizeof (GLfloat), BUFFER_OFFSET(36)); // tex
 
 	// Disable VAO
 	glEnableVertexAttribArray(0);
@@ -419,8 +426,8 @@ void concat(){
 	glUniformMatrix4fv(MVP_U, 1, GL_FALSE, &MVP[0][0]);
 	glUniformMatrix3fv(N_U, 1, GL_FALSE, &N[0][0]);
 
-	//LMV = LV * M;
-	//LMVP = LP * LMV;
+	LMV = LV * M;
+	LMVP = LP * LMV;
 	glUniformMatrix4fv(LMV_U, 1, GL_FALSE, &LMV[0][0]);
 	glUniformMatrix4fv(LP_U, 1, GL_FALSE, &LP[0][0]);
 	glUniformMatrix4fv(LMVP_U, 1, GL_FALSE, &LMVP[0][0]);
@@ -441,23 +448,32 @@ void scale(const glm::vec3& v) {
 
 
 void createShadowMap() {
-	glGenFramebuffers(1, &depthMapFBO);
+	glGenFramebuffers(1, &depthMapFBO); // create FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO); // bind FBO
 	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
 	glGenTextures(1, &depthMap);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-		SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+		//SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+		SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	glDrawBuffer(GL_NONE); // dont need color, but FBO needs color buffer
-	glReadBuffer(GL_NONE);
+	
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, depthMap, 0); // set texture as color attachment
+	//glDrawBuffer(GL_NONE); // dont need color, but FBO needs color buffer
+	//glReadBuffer(GL_NONE);
+	GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "FBO for texture setup failure" << std::endl;
 
 	// check staus
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);

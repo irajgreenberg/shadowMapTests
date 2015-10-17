@@ -5,7 +5,8 @@ out float FragDepth;
 
 in vec3 vPos;
 in vec3 vNorm;
-in vec3 vertCol;
+in vec3 vCol;
+in vec2 vTex;
 
 in vec4 shadowCoords;
 
@@ -23,7 +24,8 @@ uniform mat4 LMV;
 uniform mat4 LP;
 uniform mat4 LMVP;
 
-uniform sampler2DShadow shadowMap;
+//uniform sampler2DShadow shadowMap;
+uniform sampler2D groundPlane;
 
 
 void main() {
@@ -38,11 +40,11 @@ void main() {
   vec3 lightVec = normalize(vec3(LightPos - eyeCoords));
   
    // ambient
-  vec3 ambient = vertCol * 0.105;
+  vec3 ambient = vCol * 0.105;
 
   // diffuse
    float diff = max(dot(lightVec, n), 0.0);
-   vec3 diffuse = diff * vertCol;
+   vec3 diffuse = diff * vCol;
   
   // specular
   vec3 viewDir = normalize(camera - vPos);
@@ -51,14 +53,13 @@ void main() {
   vec3 specular = vec3(0.9) * spec;
 
 
-  if (shadowCoords.w>1){
-    float shadow = textureProj(shadowMap, shadowCoords);
-    diffuse = mix(diffuse, diffuse*shadow, 0.5);
-	 FragColor = vec4(ambient + diffuse + specular, 1.0f);
-  } else {
-   FragColor = vec4(1, 1, 1, 1.0f);
-  }
+ // if (shadowCoords.w>1){
+ //   float shadow = textureProj(shadowMap, shadowCoords);
+  //  diffuse = mix(diffuse, diffuse*shadow, 0.4);
+  //} 
 
+  FragColor = texture(groundPlane, vTex);
+  //FragColor = vec4(ambient + diffuse + specular, 1.0f);
 
 
 }
