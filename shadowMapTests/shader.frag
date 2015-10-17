@@ -50,8 +50,6 @@ void main() {
   float spec = pow(max(dot(n, halfDir), 0.0), 32.0);
   vec3 specular = vec3(0.9) * spec;
 
-  // The diffuse shading equation
-  // vec3 LightIntensity = Ld * Kd * max( dot( lightVec, n ), 0.0 ) + ambient;
 
   if (shadowCoords.w>1){
     float shadow = textureProj(shadowMap, shadowCoords);

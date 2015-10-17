@@ -121,13 +121,13 @@ int main(void) {
 	MVP_U = glGetUniformLocation(ProtoShader::getID_2(), "MVP");
 
 	// lights
-	LPOS = glm::vec4(0, 10, 150, 1.0);
+	LPOS = glm::vec4(-45, 30, 75, 1.0);
 	KD = glm::vec3(.75, .75, .75);
 	LD = glm::vec3(1, 1, 1);
 
 	//LP = glm::ortho(-10, 10, -10, 10, -10, 20);
 	LV = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-	LP = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
+	LP = glm::perspective(25.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
 	B = glm::mat4(
 		0.5f, 0.0, 0.0, 0.0,
 		0.0, 0.5f, 0.0, 0.0,
@@ -451,8 +451,8 @@ void createShadowMap() {
 		SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);

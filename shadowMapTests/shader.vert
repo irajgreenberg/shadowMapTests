@@ -30,7 +30,7 @@ void main() {
   vertCol = VertexColor;
 
   // for shadows
-  shadowCoords = LMVP * (M*vec4(VertexPosition,1));
+  shadowCoords = LMVP * vec4(VertexPosition,1.0);
   gl_Position = MVP * vec4(VertexPosition,1.0);
 
 }
