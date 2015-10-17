@@ -1,4 +1,4 @@
-﻿Build started 10/17/2015 2:38:06 PM.
+﻿Build started 10/17/2015 5:17:48 PM.
      1>Project "C:\Users\Ira\Dev\shadowMapTests\shadowMapTests\shadowMapTests.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"..\libs\glew-1.13.0\include" /I..\libs\glm /I..\libs\glfw3\include /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt main.cpp
@@ -27,4 +27,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:01.52
+Time Elapsed 00:00:01.54

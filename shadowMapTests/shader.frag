@@ -58,8 +58,8 @@ void main() {
   //  diffuse = mix(diffuse, diffuse*shadow, 0.4);
   //} 
 
-  FragColor = texture(groundPlane, vTex);
-  //FragColor = vec4(ambient + diffuse + specular, 1.0f);
+ // FragColor = texture(groundPlane, vTex);
+  FragColor = vec4(ambient + diffuse + specular, 1.0f);
 
 
 }
