@@ -9,12 +9,11 @@ in vec3 vNorm;
 in vec3 vCol;
 in vec2 vTex;
 
+// depth data form light perspective
 in vec4 shadowCoords;
 
 uniform mat4 MV;
 uniform vec4 LightPos; // Light position in eye coords.
-//uniform vec3 Kd; // Diffuse reflectivity
-//uniform vec3 Ld; // Light source intensity
 uniform mat3 N;
 
 uniform vec3 camera; // camera
@@ -26,13 +25,13 @@ uniform mat4 LP;
 uniform mat4 LMVP;
 
 //uniform sampler2DShadow shadowMap;
-uniform sampler2DShadow groundPlane;
+uniform sampler2DShadow shadowMap;
 
 
 void main() {
 	
   if(isShadowRenderPass){
-	//return;
+	return;
   }
 
   vec3 n = normalize(N * vNorm);
@@ -43,32 +42,10 @@ void main() {
    // ambient
   vec3 ambient = vCol * 0.105;
 
-  // diffuse
-   //vec3 diffuse = textureProj(groundPlane, vTex).rgb;
 
-  float visibility = 1.0;
-  //float a = texture( shadowMap, ShadowCoord.xy ).z;
-//if ( texture(groundPlane, ShadowCoord.xy ).z < ShadowCoord.z){
-//  visibility = 0.5;
-//}
-
-//if( texture(groundPlane, shadowCoords.xy).z < shadowCoords.z ) {
- // visibility = 0.5;
-//}
-
-//visibility = texture(groundPlane, vec3(shadowCoords.xy, (shadowCoords.z)/shadowCoords.w) );
-
-
-
-
-
-
-
-//float visibility = texture( shadowMap, vec3(ShadowCoord.xy, (ShadowCoord.z)/ShadowCoord.w) );
+//float visibility = texture( shadowMap, vec3(shadowCoords.xy, (shadowCoords.z)/shadowCoords.w) );
 
   vec3 diffuse = max(dot(lightVec, n), 0.0) * vCol;
-   //float diff = max(dot(lightVec, n), 0.0);
-   //vec3 diffuse = diff * vCol;
   
   // specular
   vec3 viewDir = normalize(camera - vPos);
@@ -77,23 +54,19 @@ void main() {
   vec3 specular = vec3(0.9) * spec;
 
 
-  //if (shadowCoords.w>1){
-    //float shadow = textureProj(shadowMap, shadowCoords);
-   // diffuse = mix(diffuse, diffuse*shadow, 0.4);
-//  } 
-
+  vec4 FragColor2 = vec4(1.0);
 if(shadowCoords.w>1) {
 		//check the shadow map texture to see if the fragment is in shadow
-		float shadow = textureProj(groundPlane, shadowCoords);
+		float shadow = textureProj(shadowMap, shadowCoords);
 		//darken the diffuse component apprpriately
+		diffuse = mix(diffuse, diffuse*shadow, 0.35);
+		//ambient = mix(ambient, ambient*shadow, 0.35);  
 
+		//FragColor = FragColor2;
+		FragColor = vec4(ambient + diffuse + specular, 1.0f);
+} else {
+	FragColor = vec4(ambient + diffuse + specular, 1.0f); 
+}
 
-		diffuse = mix(diffuse, diffuse*shadow, 0.4); 
- 
-	}
-
-FragColor = vec4(ambient + diffuse + specular, 1.0f); 
   //FragDepth = gl_FragCoord.z;
-
-
 }

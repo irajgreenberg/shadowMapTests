@@ -105,16 +105,6 @@ int main(void) {
 	//ProtoShader* shadowShader = new ProtoShader("shadow.vert", "shadow.frag");
 	shader->bind();
 
-	glm::vec3 camera(0.0, 50, 67);
-
-	// matrices
-	V = glm::lookAt(camera, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-	P = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
-	//P = glm::ortho<float>(-50, 50, -50, 50, -1, 200);
-
-	MV = V * M;
-	N = glm::transpose(glm::inverse(glm::mat3(MV)));
-	MVP = P * MV;
 
 	// matrix uniforms
 	M_U = glGetUniformLocation(ProtoShader::getID_2(), "M");
@@ -122,34 +112,6 @@ int main(void) {
 	P_U = glGetUniformLocation(ProtoShader::getID_2(), "P");
 	N_U = glGetUniformLocation(ProtoShader::getID_2(), "N");
 	MVP_U = glGetUniformLocation(ProtoShader::getID_2(), "MVP");
-
-
-
-
-
-
-	// lights
-	LPOS = glm::vec4(-5, 20, 40, 1.0);
-	//KD = glm::vec3(.75, .75, .75);
-	//LD = glm::vec3(1, 1, 1);
-
-	//LP = glm::ortho(-10, 10, -10, 10, -10, 20);
-	LV = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-	//LP = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
-	LP = glm::ortho<float>(-50, 50, -50, 50, -1, 200);
-	B = glm::mat4(
-		0.5f, 0.0, 0.0, 0.0,
-		0.0, 0.5f, 0.0, 0.0,
-		0.0, 0.0, 0.5f, 0.0,
-		0.5f, 0.5f, 0.5f, 1.0
-		);
-
-	BP = B * LP;
-	LMVP = BP*LV;
-
-	// light view for testing
-	//V = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-
 
 	// Light Matrix Uniforms
 	LMV_U = glGetUniformLocation(ProtoShader::getID_2(), "LMV");
@@ -165,6 +127,47 @@ int main(void) {
 	camera_U = glGetUniformLocation(ProtoShader::getID_2(), "camera");
 	// shadow flag boolean
 	isShadowRenderPass_U = glGetUniformLocation(ProtoShader::getID_2(), "isShadowRenderPass");
+
+	glm::vec3 camera(0.0, 50, 67);
+	glm::vec4 light(-23, 80, 77, 1.0);
+
+	// matrices
+	V = glm::lookAt(camera, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	P = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
+	//P = glm::ortho<float>(-50, 50, -50, 50, -1, 200);
+
+	MV = V * M;
+	N = glm::transpose(glm::inverse(glm::mat3(MV)));
+	MVP = P * MV;
+
+
+	// lights
+	LPOS = light;
+	//KD = glm::vec3(.75, .75, .75);
+	//LD = glm::vec3(1, 1, 1);
+
+	//LP = glm::ortho(-10, 10, -10, 10, -10, 20);
+	LV = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	LMV = LV * glm::mat4(1.0);
+	LP = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
+	//LP = glm::ortho<float>(-50, 50, -50, 50, -1, 200);
+	B = glm::mat4(
+		0.5f*1.01, 0.0, 0.0, 0.0,
+		0.0, 0.5f * 1.01, 0.0, 0.0,
+		0.0, 0.0, 0.5f * 1.01, 0.0,
+		0.5f * 1.01, 0.5f * 1.01, 0.5f * 1.01, 1.0
+		);
+
+	//B = glm::mat4(1.0);
+
+	BP = B * LP;
+	LMVP = BP*LMV;
+
+	// light view for testing
+	//V = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+
+
+
 
 
 
@@ -199,7 +202,7 @@ int main(void) {
 
 	// create shadow map
 	createShadowMap();
-	GLuint texID = glGetUniformLocation(ProtoShader::getID_2(), "groundPlane");
+	GLuint texID = glGetUniformLocation(ProtoShader::getID_2(), "shadowMap");
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -241,10 +244,11 @@ int main(void) {
 	
 		glCullFace(GL_FRONT);
 		//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		//glClear(GL_DEPTH_BUFFER_BIT);
 
-		//drawRect({ 135, 1, 135 });
+		drawRect({ 135, 1, 135 });
 		for (auto i = 0; i < cubeCount; i++) {
 			push();
 			translate({ locs[i].x, locs[i].y + cubes[i].h / 2.0, locs[i].z });
@@ -273,7 +277,11 @@ int main(void) {
 		isShadowRenderPass = 0;
 		glUniform1i(isShadowRenderPass_U, isShadowRenderPass);
 
-		glBindTexture(GL_TEXTURE_2D, myColTex);
+		//glDrawBuffer(GL_BACK_LEFT);
+		//glActiveTexture(myDepthTex);
+		//glBindTexture(GL_TEXTURE_2D, m_shadowMap);
+
+		//glBindTexture(GL_TEXTURE_2D, myColTex);
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		drawRect({ 135, 1, 135 });
@@ -439,8 +447,9 @@ void concat(){
 	glUniformMatrix4fv(MVP_U, 1, GL_FALSE, &MVP[0][0]);
 	glUniformMatrix3fv(N_U, 1, GL_FALSE, &N[0][0]);
 
-	LMV = LV * M;
-	LMVP = LP * LMV;
+	LMV = LV * M;// glm::mat4(1.0);
+	BP = B * LP;
+	LMVP = BP * LMV;
 	glUniformMatrix4fv(LMV_U, 1, GL_FALSE, &LMV[0][0]);
 	glUniformMatrix4fv(LP_U, 1, GL_FALSE, &LP[0][0]);
 	glUniformMatrix4fv(LMVP_U, 1, GL_FALSE, &LMVP[0][0]);
@@ -460,22 +469,28 @@ void scale(const glm::vec3& v) {
 }
 
 void createShadowMap() {
-	//GLuint FramebufferName = 0;
-	glGenFramebuffers(1, &myFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, myFBO);
-
 	// Depth texture. Slower than a depth buffer, but you can sample it later in your shader
-	//GLuint depthTexture;
 	glGenTextures(1, &myDepthTex);
+	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, myDepthTex);
-	
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+
+	GLfloat border[] = { 1.0f, .0f, .0f, .0f };
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
+	
 
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, myDepthTex, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	
+	//GLuint FramebufferName = 0;
+	glGenFramebuffers(1, &myFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, myFBO);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, myDepthTex, 0);
 
 	glDrawBuffer(GL_NONE); // No color buffer is drawn to.
 
@@ -483,40 +498,7 @@ void createShadowMap() {
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "FBO is broken \n";
 
-	// working sorta
-	//// The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
-	//glGenFramebuffers(1, &myFBO); // create FBO Obj
-	//glBindFramebuffer(GL_FRAMEBUFFER, myFBO); // Make FBO active
-
-	//// Create Texture Obj
-	//glGenTextures(1, &myColTex);
-	//// "Bind" the newly created texture : all future texture functions will modify this texture
-	//glBindTexture(GL_TEXTURE_2D, myColTex);
-
-	//// Give an empty image to OpenGL ( the last "0" )
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 768, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-
-	//// Poor filtering. Needed !
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	//// The depth buffer
-	//glGenRenderbuffers(1, &myDepthTex);
-	//glBindRenderbuffer(GL_RENDERBUFFER, myDepthTex);
-	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1024, 768);
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, myDepthTex);
-
-	//// Set "renderedTexture" as our colour attachement #0
-	//glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, myColTex, 0);
-
-	//// Set the list of draw buffers.
-	//GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
-	//glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
-
-	//// Always check that our framebuffer is ok
-	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	//	std::cout << "proble with FBO for texture";
-
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 //void createShadowMap() {
