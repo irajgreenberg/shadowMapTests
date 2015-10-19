@@ -50,13 +50,15 @@ void rotate(float ang, const glm::vec3& axis);
 void scale(const glm::vec3& v);
 
 // For shadowmap
-GLuint depthMapFBO = 0;
-GLuint depthMap = 0;
+GLuint colorMapFBO = 0, depthMapFBO = 0;
+GLuint colorMap = 0, depthMap = 0;
 const int SHADOW_WIDTH = 1024;
 const int SHADOW_HEIGHT = 1024;
 void createShadowMap();
 GLint isShadowRenderPass = 0; // flag for shader during shadowing pass
 GLuint isShadowRenderPass_U = 0;
+
+GLuint myFBO, myColTex, myDepthTex;
 
 
 int main(void) {
@@ -108,26 +110,33 @@ int main(void) {
 	// matrices
 	V = glm::lookAt(camera, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	P = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
+	//P = glm::ortho<float>(-50, 50, -50, 50, -1, 200);
 
 	MV = V * M;
 	N = glm::transpose(glm::inverse(glm::mat3(MV)));
 	MVP = P * MV;
 
 	// matrix uniforms
-	M_U = glGetUniformLocation(ProtoShader::getID_2(), "M"); 
+	M_U = glGetUniformLocation(ProtoShader::getID_2(), "M");
 	MV_U = glGetUniformLocation(ProtoShader::getID_2(), "MV");
 	P_U = glGetUniformLocation(ProtoShader::getID_2(), "P");
 	N_U = glGetUniformLocation(ProtoShader::getID_2(), "N");
 	MVP_U = glGetUniformLocation(ProtoShader::getID_2(), "MVP");
 
+
+
+
+
+
 	// lights
-	LPOS = glm::vec4(-45, 55, 65, 1.0);
-	KD = glm::vec3(.75, .75, .75);
-	LD = glm::vec3(1, 1, 1);
+	LPOS = glm::vec4(-5, 20, 40, 1.0);
+	//KD = glm::vec3(.75, .75, .75);
+	//LD = glm::vec3(1, 1, 1);
 
 	//LP = glm::ortho(-10, 10, -10, 10, -10, 20);
 	LV = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-	LP = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
+	//LP = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
+	LP = glm::ortho<float>(-50, 50, -50, 50, -1, 200);
 	B = glm::mat4(
 		0.5f, 0.0, 0.0, 0.0,
 		0.0, 0.5f, 0.0, 0.0,
@@ -149,8 +158,8 @@ int main(void) {
 
 	// Light Uniforms
 	LPOS_U = glGetUniformLocation(ProtoShader::getID_2(), "LightPos");
-	KD_U = glGetUniformLocation(ProtoShader::getID_2(), "Kd");
-	LD_U = glGetUniformLocation(ProtoShader::getID_2(), "Ld");
+	//KD_U = glGetUniformLocation(ProtoShader::getID_2(), "Kd");
+	//LD_U = glGetUniformLocation(ProtoShader::getID_2(), "Ld");
 
 
 	camera_U = glGetUniformLocation(ProtoShader::getID_2(), "camera");
@@ -190,6 +199,7 @@ int main(void) {
 
 	// create shadow map
 	createShadowMap();
+	GLuint texID = glGetUniformLocation(ProtoShader::getID_2(), "groundPlane");
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -205,18 +215,18 @@ int main(void) {
 
 
 		glUniform4fv(LPOS_U, 1, &LPOS.x);
-	//	glUniform3fv(KD_U, 1, &KD.x);
-	//	glUniform3fv(LD_U, 1, &LD.x);
+		//	glUniform3fv(KD_U, 1, &KD.x);
+		//	glUniform3fv(LD_U, 1, &LD.x);
 
 		glUniform3fv(camera_U, 1, &camera.x);
 
 		float ratio;
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
-		
+
 
 		static float rot = 0;
-		rotate(rot += .0025, glm::vec3(0, 1, 0));
+		//rotate(rot += .0025, glm::vec3(0, 1, 0));
 
 		/*****************************
 		* render pass 1 to depth map *
@@ -224,10 +234,13 @@ int main(void) {
 		isShadowRenderPass = 1;
 		glUniform1i(isShadowRenderPass_U, isShadowRenderPass);
 
-		
+
+		glBindFramebuffer(GL_FRAMEBUFFER, myFBO); // bind depth buffer
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO); // bind depth buffer
+		//glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO); // bind depth buffer
+	
 		glCullFace(GL_FRONT);
+		//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		//glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -251,35 +264,35 @@ int main(void) {
 
 		// prepare for screen rendering
 		glCullFace(GL_BACK);
-		
+
 
 		/**************************
 		* render pass 2 to screen *
 		**************************/
-		glDrawBuffer(GL_BACK_LEFT);
+		//glDrawBuffer(GL_BACK_LEFT);
 		isShadowRenderPass = 0;
 		glUniform1i(isShadowRenderPass_U, isShadowRenderPass);
-		
-		glBindTexture(GL_TEXTURE_2D, depthMap);
+
+		glBindTexture(GL_TEXTURE_2D, myColTex);
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		drawRect({ 135, 1, 135 });
-		
+
 
 		for (auto i = 0; i < cubeCount; i++) {
 			push();
 			translate({ locs[i].x, locs[i].y + cubes[i].h / 2.0, locs[i].z });
 			cubes[i].display();
 			pop();
-		}
+			}
 
-		static float cntr2 = 0;
-		push();
-		translate({ 0, 14.0, 0 });
-		rotate(cntr2 += .02, glm::vec3(.85, .45, .25));
-		t.display();
-		pop();
-		
+			static float cntr2 = 0;
+			push();
+			translate({ 0, 14.0, 0 });
+			rotate(cntr2 += .02, glm::vec3(.85, .45, .25));
+			t.display();
+			pop();
+
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -446,43 +459,104 @@ void scale(const glm::vec3& v) {
 	concat();
 }
 
-
 void createShadowMap() {
-	glGenFramebuffers(1, &depthMapFBO); // create FBO
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO); // bind FBO
-	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	//GLuint FramebufferName = 0;
+	glGenFramebuffers(1, &myFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, myFBO);
 
-	glGenTextures(1, &depthMap);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-		//SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-		SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	// Depth texture. Slower than a depth buffer, but you can sample it later in your shader
+	//GLuint depthTexture;
+	glGenTextures(1, &myDepthTex);
+	glBindTexture(GL_TEXTURE_2D, myDepthTex);
+	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, depthMap, 0); // set texture as color attachment
-	//glDrawBuffer(GL_NONE); // dont need color, but FBO needs color buffer
-	//glReadBuffer(GL_NONE);
-	GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
-	glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, myDepthTex, 0);
 
+	glDrawBuffer(GL_NONE); // No color buffer is drawn to.
+
+	// Always check that our framebuffer is ok
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "FBO for texture setup failure" << std::endl;
+		std::cout << "FBO is broken \n";
 
-	// check staus
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status == GL_FRAMEBUFFER_COMPLETE){
-		std::cout << "FBO setup successful" << std::endl;
-	}
-	else {
-		std::cout << "FBO setup failure" << std::endl;
-	}
+	// working sorta
+	//// The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
+	//glGenFramebuffers(1, &myFBO); // create FBO Obj
+	//glBindFramebuffer(GL_FRAMEBUFFER, myFBO); // Make FBO active
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//// Create Texture Obj
+	//glGenTextures(1, &myColTex);
+	//// "Bind" the newly created texture : all future texture functions will modify this texture
+	//glBindTexture(GL_TEXTURE_2D, myColTex);
+
+	//// Give an empty image to OpenGL ( the last "0" )
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 768, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+	//// Poor filtering. Needed !
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	//// The depth buffer
+	//glGenRenderbuffers(1, &myDepthTex);
+	//glBindRenderbuffer(GL_RENDERBUFFER, myDepthTex);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1024, 768);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, myDepthTex);
+
+	//// Set "renderedTexture" as our colour attachement #0
+	//glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, myColTex, 0);
+
+	//// Set the list of draw buffers.
+	//GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+	//glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+	//// Always check that our framebuffer is ok
+	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	//	std::cout << "proble with FBO for texture";
+
 }
+
+//void createShadowMap() {
+//	glGenFramebuffers(1, &depthMapFBO); // create FBO
+//	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO); // bind FBO
+//	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+//
+//	glGenTextures(1, &depthMap);
+//	glActiveTexture(GL_TEXTURE0);
+//	glBindTexture(GL_TEXTURE_2D, depthMap);
+//	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+//		//SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+//		1024, 1024, 0, GL_RGB, GL_FLOAT, NULL);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+//
+//	
+//	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, depthMap, 0); // set texture as color attachment
+//	//glDrawBuffer(GL_NONE); // dont need color, but FBO needs color buffer
+//	//glReadBuffer(GL_NONE);
+//	GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+//	glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+//
+//	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+//		std::cout << "FBO for texture setup failure" << std::endl;
+//
+//	// check staus
+//	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+//	if (status == GL_FRAMEBUFFER_COMPLETE){
+//		std::cout << "FBO setup successful" << std::endl;
+//	}
+//	else {
+//		std::cout << "FBO setup failure" << std::endl;
+//	}
+//
+//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//}

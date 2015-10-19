@@ -33,7 +33,7 @@ void main() {
   vTex = VertexTexture;
 
   // for shadows
-  shadowCoords = LMVP * vec4(VertexPosition,1.0);
-  gl_Position = LMVP * vec4(VertexPosition,1.0);
+	shadowCoords = LMVP * vec4(VertexPosition,1.0);
+    gl_Position = MVP * vec4(VertexPosition,1.0);
 
 }
