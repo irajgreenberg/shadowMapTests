@@ -53,20 +53,15 @@ void main() {
   float spec = pow(max(dot(n, halfDir), 0.0), 32.0);
   vec3 specular = vec3(0.9) * spec;
 
-
-  vec4 FragColor2 = vec4(1.0);
 if(shadowCoords.w>1) {
 		//check the shadow map texture to see if the fragment is in shadow
 		float shadow = textureProj(shadowMap, shadowCoords);
 		//darken the diffuse component apprpriately
 		diffuse = mix(diffuse, diffuse*shadow, 0.35);
-		//ambient = mix(ambient, ambient*shadow, 0.35);  
-
-		//FragColor = FragColor2;
-		FragColor = vec4(ambient + diffuse + specular, 1.0f);
-} else {
-	FragColor = vec4(ambient + diffuse + specular, 1.0f); 
 }
+
+FragColor = vec4(ambient + diffuse + specular, 1.0f); 
+
 
   //FragDepth = gl_FragCoord.z;
 }

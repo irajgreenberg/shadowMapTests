@@ -68,7 +68,7 @@ int main(void) {
 	glfwSetErrorCallback(error_callback);
 	if (!glfwInit())
 		exit(EXIT_FAILURE);
-	window = glfwCreateWindow(1024, 768, "Simple example", NULL, NULL);
+	window = glfwCreateWindow(1024, 1024, "Simple example", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();
@@ -98,7 +98,7 @@ int main(void) {
 	//glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glPolygonMode(GL_FRONT, GL_FILL);
 
 	// shader
 	ProtoShader* shader = new ProtoShader("shader.vert", "shader.frag");
@@ -148,20 +148,21 @@ int main(void) {
 
 	//LP = glm::ortho(-10, 10, -10, 10, -10, 20);
 	LV = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-	LMV = LV * glm::mat4(1.0);
-	LP = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 1000.0f);
-	//LP = glm::ortho<float>(-50, 50, -50, 50, -1, 200);
+	LMV = LV * M;
+	LP = glm::perspective(45.0f, 1.0f, 0.1f, 1000.0f);
+	//LP = glm::ortho<float>(-50, 50, -50, 50, -1, 1000.0f);
 	B = glm::mat4(
-		0.5f*1.01, 0.0, 0.0, 0.0,
-		0.0, 0.5f * 1.01, 0.0, 0.0,
-		0.0, 0.0, 0.5f * 1.01, 0.0,
-		0.5f * 1.01, 0.5f * 1.01, 0.5f * 1.01, 1.0
+		0.5f, 0.0, 0.0, 0.0,
+		0.0, 0.5f, 0.0, 0.0,
+		0.0, 0.0, 0.5f, 0.0,
+		0.5f, 0.5f, 0.5f, 1.0
 		);
+	B = glm::scale(glm::translate(glm::mat4(1), glm::vec3(0.5, 0.5, 0.5)), glm::vec3(0.5, 0.5, 0.5));
 
 	//B = glm::mat4(1.0);
 
 	BP = B * LP;
-	LMVP = BP*LMV;
+	LMVP = BP*LV;
 
 	// light view for testing
 	//V = glm::lookAt(glm::vec3(LPOS), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
@@ -239,14 +240,9 @@ int main(void) {
 
 
 		glBindFramebuffer(GL_FRAMEBUFFER, myFBO); // bind depth buffer
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		//glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO); // bind depth buffer
-	
-		glCullFace(GL_FRONT);
-		//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_DEPTH_BUFFER_BIT);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		//glClear(GL_DEPTH_BUFFER_BIT);
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		glCullFace(GL_FRONT);
 
 		drawRect({ 135, 1, 135 });
 		for (auto i = 0; i < cubeCount; i++) {
@@ -268,7 +264,6 @@ int main(void) {
 
 		// prepare for screen rendering
 		glCullFace(GL_BACK);
-
 
 		/**************************
 		* render pass 2 to screen *
@@ -449,7 +444,7 @@ void concat(){
 
 	LMV = LV * M;// glm::mat4(1.0);
 	BP = B * LP;
-	LMVP = BP * LMV;
+	LMVP = BP * LV;
 	glUniformMatrix4fv(LMV_U, 1, GL_FALSE, &LMV[0][0]);
 	glUniformMatrix4fv(LP_U, 1, GL_FALSE, &LP[0][0]);
 	glUniformMatrix4fv(LMVP_U, 1, GL_FALSE, &LMVP[0][0]);
@@ -471,7 +466,7 @@ void scale(const glm::vec3& v) {
 void createShadowMap() {
 	// Depth texture. Slower than a depth buffer, but you can sample it later in your shader
 	glGenTextures(1, &myDepthTex);
-	//glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, myDepthTex);
 
 	GLfloat border[] = { 1.0f, .0f, .0f, .0f };
@@ -484,7 +479,7 @@ void createShadowMap() {
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
 	
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
 	
 	//GLuint FramebufferName = 0;
 	glGenFramebuffers(1, &myFBO);
@@ -492,7 +487,9 @@ void createShadowMap() {
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, myDepthTex, 0);
 
-	glDrawBuffer(GL_NONE); // No color buffer is drawn to.
+	//glDrawBuffer(GL_NONE); // No color buffer is drawn to.
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
 
 	// Always check that our framebuffer is ok
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
